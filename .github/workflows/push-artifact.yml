@@ -28,14 +28,14 @@ jobs:
         run: npm run build
 
       - name: Upload Chrome extension artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: markdown-viewer-chrome
           path: dist/chrome/
           retention-days: 7
 
       - name: Upload Edge extension artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: markdown-viewer-edge
           path: dist/edge/
