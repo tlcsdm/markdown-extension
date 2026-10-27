@@ -1,18 +1,36 @@
 {
   "name": "markdown-extension",
   "version": "1.0.0",
-  "description": "",
+  "description": "Browser extension to render Markdown files with Mermaid, PlantUML, and syntax highlighting",
   "main": "index.js",
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "setup": "node scripts/download-libs.js",
+    "build": "node scripts/build.js",
+    "build:chrome": "node scripts/build.js chrome",
+    "build:edge": "node scripts/build.js edge",
+    "test": "echo \"No tests specified\" && exit 0"
   },
   "repository": {
     "type": "git",
-    "url": "http://localhost:26831/tlcsdm/markdown-extension"
+    "url": "git+https://github.com/tlcsdm/markdown-extension.git"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": [
+    "markdown",
+    "mermaid",
+    "plantuml",
+    "browser-extension",
+    "chrome",
+    "edge"
+  ],
+  "author": "tlcsdm",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/tlcsdm/markdown-extension/issues"
+  },
+  "homepage": "https://github.com/tlcsdm/markdown-extension#readme",
   "devDependencies": {
     "highlight.js": "^11.12.0",
     "marked": "^18.1.2",

@@ -1,0 +1,42 @@
+name: Build Artifacts
+
+on:
+  push:
+    branches: [master, main]
+
+permissions:
+  contents: read
+
+jobs:
+  build-artifacts:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build extensions
+        run: npm run build
+
+      - name: Upload Chrome extension artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: markdown-viewer-chrome
+          path: dist/chrome/
+          retention-days: 7
+
+      - name: Upload Edge extension artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: markdown-viewer-edge
+          path: dist/edge/
+          retention-days: 7

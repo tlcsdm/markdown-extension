@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en" translate="no">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="google" content="notranslate">
+  <title>Markdown Viewer</title>
+  <link rel="stylesheet" href="lib/github.min.css" id="hljs-light-theme">
+  <link rel="stylesheet" href="lib/github-dark.min.css" id="hljs-dark-theme" disabled>
+  <link rel="stylesheet" href="styles.css">
+  <script>
+    // Early theme detection to prevent flash of wrong theme
+    (function () {
+      try {
+        var savedMode = localStorage.getItem('mdViewer_themeMode');
+        var theme = 'light';
+        if (savedMode === 'dark') {
+          theme = 'dark';
+        } else if (savedMode === 'auto' || !savedMode) {
+          if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            theme = 'dark';
+          }
+        }
+        document.documentElement.setAttribute('data-theme', theme);
+      } catch (e) {}
+    })();
+  </script>
+</head>
+<body>
+  <div class="app-wrapper">
+    <!-- Header toolbar -->
+    <header class="header">
+      <span class="header-title" id="file-title">Markdown Viewer</span>
+
+      <label class="btn" id="open-file-btn" title="" data-i18n-title="openFile">
+        <input type="file" id="file-input" accept=".md,.markdown" style="display:none">
+        📂 <span data-i18n="openFile">Open File</span>
+      </label>
+
+      <button class="btn" id="back-btn" style="display:none" data-i18n="back">← Back</button>
+
+      <div class="header-spacer"></div>
+
+      <!-- Theme toggle -->
+      <div class="btn-group" role="group" aria-label="Theme">
+        <button class="btn" id="theme-light-btn" data-i18n-title="themeLight" aria-label="Light theme">☀️</button>
+        <button class="btn active" id="theme-auto-btn" data-i18n-title="themeAuto" aria-label="Auto theme">💻</button>
+        <button class="btn" id="theme-dark-btn" data-i18n-title="themeDark" aria-label="Dark theme">🌙</button>
+      </div>
+    </header>
+
+    <!-- Main content area -->
+    <div class="main-area">
+      <!-- Sidebar / TOC -->
+      <aside class="sidebar hidden" id="sidebar">
+        <div class="sidebar-header" data-i18n="tableOfContents">Table of Contents</div>
+        <ul class="toc-list" id="toc-list"></ul>
+      </aside>
+
+      <!-- Markdown content -->
+      <main class="content-area" id="content-area">
+        <!-- Drop zone (shown when no file loaded) -->
+        <div class="drop-zone" id="drop-zone">
+          <div class="drop-zone-icon">📝</div>
+          <div class="drop-zone-text" data-i18n="dropFileHere">
+            Drop a Markdown file here, or click to open
+          </div>
+        </div>
+
+        <!-- Rendered markdown output -->
+        <article class="markdown-body hidden" id="markdown-body"></article>
+      </main>
+    </div>
+  </div>
+
+  <!-- Hidden file input for linked files -->
+  <input type="file" id="linked-file-input" accept=".md,.markdown" style="display:none">
+
+  <script src="lib/marked.min.js"></script>
+  <script src="lib/highlight.min.js"></script>
+  <script src="lib/pako_deflate.min.js"></script>
+  <script src="lib/mermaid.min.js"></script>
+  <script src="i18n.js"></script>
+  <script src="markdown-viewer.js"></script>
+</body>
+</html>
