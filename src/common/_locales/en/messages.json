@@ -1,0 +1,53 @@
+{
+  "extName": {
+    "message": "Markdown Viewer"
+  },
+  "extDescription": {
+    "message": "Render local Markdown files with Mermaid, PlantUML, and syntax highlighting"
+  },
+  "openFile": {
+    "message": "Open File"
+  },
+  "openDirectory": {
+    "message": "Open Directory"
+  },
+  "themeLight": {
+    "message": "Light"
+  },
+  "themeDark": {
+    "message": "Dark"
+  },
+  "themeAuto": {
+    "message": "Auto"
+  },
+  "tableOfContents": {
+    "message": "Table of Contents"
+  },
+  "dropFileHere": {
+    "message": "Drop a Markdown file here, or click to open"
+  },
+  "fileReadFailed": {
+    "message": "Failed to read file"
+  },
+  "renderFailed": {
+    "message": "Render failed"
+  },
+  "invalidFileType": {
+    "message": "Please drop a .md or .markdown file"
+  },
+  "plantumlServerLabel": {
+    "message": "PlantUML Server"
+  },
+  "plantumlServerPlaceholder": {
+    "message": "https://kroki.io"
+  },
+  "openLinkedFile": {
+    "message": "Open linked file"
+  },
+  "back": {
+    "message": "Back"
+  },
+  "noHeadings": {
+    "message": "No headings found"
+  }
+}

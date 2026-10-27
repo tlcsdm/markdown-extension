@@ -1,0 +1,53 @@
+{
+  "extName": {
+    "message": "Markdown 查看器"
+  },
+  "extDescription": {
+    "message": "渲染本地 Markdown 文件，支持 Mermaid、PlantUML 和代码高亮"
+  },
+  "openFile": {
+    "message": "打开文件"
+  },
+  "openDirectory": {
+    "message": "打开目录"
+  },
+  "themeLight": {
+    "message": "浅色"
+  },
+  "themeDark": {
+    "message": "深色"
+  },
+  "themeAuto": {
+    "message": "自动"
+  },
+  "tableOfContents": {
+    "message": "目录"
+  },
+  "dropFileHere": {
+    "message": "将 Markdown 文件拖到此处，或点击打开"
+  },
+  "fileReadFailed": {
+    "message": "文件读取失败"
+  },
+  "renderFailed": {
+    "message": "渲染失败"
+  },
+  "invalidFileType": {
+    "message": "请拖入 .md 或 .markdown 文件"
+  },
+  "plantumlServerLabel": {
+    "message": "PlantUML 服务器"
+  },
+  "plantumlServerPlaceholder": {
+    "message": "https://kroki.io"
+  },
+  "openLinkedFile": {
+    "message": "打开链接文件"
+  },
+  "back": {
+    "message": "返回"
+  },
+  "noHeadings": {
+    "message": "未找到标题"
+  }
+}

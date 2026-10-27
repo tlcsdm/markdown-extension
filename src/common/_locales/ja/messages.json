@@ -1,0 +1,53 @@
+{
+  "extName": {
+    "message": "Markdown ビューアー"
+  },
+  "extDescription": {
+    "message": "Mermaid、PlantUML、シンタックスハイライト対応のMarkdownファイルレンダラー"
+  },
+  "openFile": {
+    "message": "ファイルを開く"
+  },
+  "openDirectory": {
+    "message": "ディレクトリを開く"
+  },
+  "themeLight": {
+    "message": "ライト"
+  },
+  "themeDark": {
+    "message": "ダーク"
+  },
+  "themeAuto": {
+    "message": "自動"
+  },
+  "tableOfContents": {
+    "message": "目次"
+  },
+  "dropFileHere": {
+    "message": "Markdownファイルをここにドロップするか、クリックして開いてください"
+  },
+  "fileReadFailed": {
+    "message": "ファイルの読み取りに失敗しました"
+  },
+  "renderFailed": {
+    "message": "レンダリングに失敗しました"
+  },
+  "invalidFileType": {
+    "message": ".md または .markdown ファイルをドロップしてください"
+  },
+  "plantumlServerLabel": {
+    "message": "PlantUML サーバー"
+  },
+  "plantumlServerPlaceholder": {
+    "message": "https://kroki.io"
+  },
+  "openLinkedFile": {
+    "message": "リンクファイルを開く"
+  },
+  "back": {
+    "message": "戻る"
+  },
+  "noHeadings": {
+    "message": "見出しが見つかりません"
+  }
+}
