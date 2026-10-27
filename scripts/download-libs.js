@@ -28,8 +28,8 @@ function copyLib(src, dest) {
 
 console.log('Downloading library files from node_modules...\n');
 
-// marked - Markdown parser
-copyLib('marked/lib/marked.umd.js', 'marked.min.js');
+// markdown-it - Markdown parser (VSCode rendering engine)
+copyLib('markdown-it/dist/browser/markdown-it.umd.min.js', 'markdown-it.min.js');
 
 // mermaid - Diagram rendering
 copyLib('mermaid/dist/mermaid.min.js', 'mermaid.min.js');
@@ -38,8 +38,5 @@ copyLib('mermaid/dist/mermaid.min.js', 'mermaid.min.js');
 copyLib('pako/dist/browser/pako_deflate.umd.min.js', 'pako_deflate.min.js');
 
 console.log('\nLibrary files updated in src/common/lib/');
-console.log('Note: highlight.js CSS and JS are downloaded from cdnjs during setup.');
-console.log('If you need to update highlight.js, please download manually from:');
-console.log('  https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.x.x/highlight.min.js');
-console.log('  https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.x.x/styles/github.min.css');
-console.log('  https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.x.x/styles/github-dark.min.css');
+console.log('Note: highlight.js CSS and JS are bundled from node_modules.');
+console.log('Run `npm install` then `npm run setup` to refresh all library files.');
