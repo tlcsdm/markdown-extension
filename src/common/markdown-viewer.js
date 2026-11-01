@@ -5,8 +5,12 @@
   // ===== State =====
   let currentFileText = null;
   let currentFileName = null;
+  let currentFileHandle = null;
+  let currentFileMeta = null;
+  let fileWatchTimer = null;
   let fileHistory = [];
   let themeMode = 'auto';
+  let isSidebarCollapsed = false;
 
   // ===== DOM References =====
   const dropZone = document.getElementById('drop-zone');
@@ -14,10 +18,13 @@
   const sidebar = document.getElementById('sidebar');
   const tocList = document.getElementById('toc-list');
   const fileTitle = document.getElementById('file-title');
+  const openFileBtn = document.getElementById('open-file-btn');
   const fileInput = document.getElementById('file-input');
   const linkedFileInput = document.getElementById('linked-file-input');
   const backBtn = document.getElementById('back-btn');
   const contentArea = document.getElementById('content-area');
+  const sidebarToggleBtn = document.getElementById('sidebar-toggle-btn');
+  const sidebarResizer = document.getElementById('sidebar-resizer');
 
   // ===== PlantUML Encoder =====
   const pumlAlphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_';
@@ -224,14 +231,15 @@
   // ===== TOC =====
   function buildTOC() {
     const headings = markdownBody.querySelectorAll('h1, h2, h3, h4, h5, h6');
+    const titleHeadings = markdownBody.querySelectorAll('h1');
     tocList.innerHTML = '';
 
-    if (headings.length === 0) {
-      sidebar.classList.add('hidden');
+    if (headings.length === 0 || titleHeadings.length === 0) {
+      setSidebarVisible(false);
       return;
     }
 
-    sidebar.classList.remove('hidden');
+    setSidebarVisible(true);
 
     headings.forEach(heading => {
       const level = parseInt(heading.tagName.slice(1));
@@ -255,6 +263,19 @@
     setupScrollSpy(headings);
   }
 
+  function setSidebarVisible(visible) {
+    sidebar.classList.toggle('hidden', !visible);
+    sidebarResizer.classList.toggle('hidden', !visible || isSidebarCollapsed);
+  }
+
+  function setSidebarCollapsed(collapsed) {
+    isSidebarCollapsed = collapsed;
+    sidebar.classList.toggle('collapsed', collapsed);
+    sidebarResizer.classList.toggle('hidden', collapsed || sidebar.classList.contains('hidden'));
+    sidebarToggleBtn.textContent = collapsed ? '▶' : '◀';
+    sidebarToggleBtn.title = collapsed ? 'Expand sidebar' : 'Collapse sidebar';
+  }
+
   function setActiveTOC(activeLink) {
     tocList.querySelectorAll('a').forEach(a => a.classList.remove('active'));
     if (activeLink) activeLink.classList.add('active');
@@ -276,7 +297,9 @@
   }
 
   // ===== File Loading =====
-  async function loadMarkdownText(text, filename) {
+  async function loadMarkdownText(text, filename, options = {}) {
+    const preserveScroll = !!options.preserveScroll;
+    const previousScrollTop = contentArea.scrollTop;
     currentFileText = text;
     currentFileName = filename;
 
@@ -295,7 +318,7 @@
     }
 
     buildTOC();
-    contentArea.scrollTop = 0;
+    contentArea.scrollTop = preserveScroll ? previousScrollTop : 0;
 
     initMermaid();
     await renderMermaidBlocks();
@@ -314,28 +337,131 @@
     });
   }
 
-  function loadFile(file) {
+  function stopFileWatch() {
+    if (fileWatchTimer) {
+      clearInterval(fileWatchTimer);
+      fileWatchTimer = null;
+    }
+  }
+
+  function startFileWatch() {
+    stopFileWatch();
+    if (!currentFileHandle) return;
+    fileWatchTimer = setInterval(checkFileUpdates, 1500);
+  }
+
+  function setCurrentFileSource(fileHandle, file) {
+    currentFileHandle = fileHandle || null;
+    if (currentFileHandle && file) {
+      currentFileMeta = { lastModified: file.lastModified, size: file.size };
+      startFileWatch();
+    } else {
+      currentFileMeta = null;
+      stopFileWatch();
+    }
+  }
+
+  async function checkFileUpdates() {
+    if (!currentFileHandle) return;
+    try {
+      const latestFile = await currentFileHandle.getFile();
+      const changed = !currentFileMeta ||
+        latestFile.lastModified !== currentFileMeta.lastModified ||
+        latestFile.size !== currentFileMeta.size;
+      if (!changed) return;
+
+      currentFileMeta = { lastModified: latestFile.lastModified, size: latestFile.size };
+      await loadMarkdownText(await latestFile.text(), latestFile.name, { preserveScroll: true });
+    } catch (e) {
+      console.warn('File watch stopped:', e);
+      setCurrentFileSource(null);
+    }
+  }
+
+  async function loadFile(file, options = {}) {
+    const pushHistoryEntry = options.pushHistoryEntry !== false;
+    const fileHandle = options.fileHandle || null;
     if (!file.name.match(/\.(md|markdown)$/i)) {
       const msg = window.i18n ? window.i18n.getMessage('invalidFileType') : 'Please drop a .md or .markdown file';
       alert(msg);
       return;
     }
-    const reader = new FileReader();
-    reader.onload = e => {
-      pushHistory();
-      loadMarkdownText(e.target.result, file.name);
-    };
-    reader.onerror = () => {
+    try {
+      const text = await file.text();
+      if (pushHistoryEntry) pushHistory();
+      setCurrentFileSource(fileHandle, file);
+      await loadMarkdownText(text, file.name);
+    } catch (e) {
       const msg = window.i18n ? window.i18n.getMessage('fileReadFailed') : 'Failed to read file';
       alert(msg);
-    };
-    reader.readAsText(file);
+    }
+  }
+
+  async function pickFileHandle() {
+    const handles = await window.showOpenFilePicker({
+      multiple: false,
+      types: [{ description: 'Markdown', accept: { 'text/markdown': ['.md', '.markdown'] } }]
+    });
+    if (!handles || handles.length === 0) return;
+    const handle = handles[0];
+    await loadFile(await handle.getFile(), { fileHandle: handle });
+  }
+
+  async function extractDroppedFileHandle(event) {
+    const items = event.dataTransfer && event.dataTransfer.items ? Array.from(event.dataTransfer.items) : [];
+    for (const item of items) {
+      if (typeof item.getAsFileSystemHandle === 'function') {
+        try {
+          const handle = await item.getAsFileSystemHandle();
+          if (handle && handle.kind === 'file') return handle;
+        } catch (e) {}
+      }
+    }
+    return null;
+  }
+
+  async function openDroppedFileInNewWindow(file) {
+    try {
+      const transferKey = `mdViewer_transfer_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+      const payload = { text: await file.text(), filename: file.name };
+      localStorage.setItem(transferKey, JSON.stringify(payload));
+      const url = new URL(window.location.href);
+      url.searchParams.set('transfer', transferKey);
+      window.open(url.toString(), '_blank', 'noopener');
+    } catch (e) {
+      await loadFile(file);
+    }
+  }
+
+  async function loadFromTransferIfPresent() {
+    const params = new URLSearchParams(window.location.search);
+    const transferKey = params.get('transfer');
+    if (!transferKey) return;
+    try {
+      const raw = localStorage.getItem(transferKey);
+      if (raw) {
+        const data = JSON.parse(raw);
+        localStorage.removeItem(transferKey);
+        if (data && typeof data.text === 'string') {
+          await loadMarkdownText(data.text, data.filename || 'Markdown Viewer');
+        }
+      }
+    } catch (e) {}
+    params.delete('transfer');
+    const cleanQuery = params.toString();
+    const cleanUrl = `${window.location.pathname}${cleanQuery ? `?${cleanQuery}` : ''}`;
+    history.replaceState(null, '', cleanUrl);
   }
 
   // ===== History =====
   function pushHistory() {
     if (currentFileText) {
-      fileHistory.push({ text: currentFileText, filename: currentFileName });
+      fileHistory.push({
+        text: currentFileText,
+        filename: currentFileName,
+        fileHandle: currentFileHandle,
+        fileMeta: currentFileMeta ? { ...currentFileMeta } : null
+      });
       backBtn.style.display = '';
     }
   }
@@ -345,6 +471,13 @@
     const prev = fileHistory.pop();
     if (fileHistory.length === 0) backBtn.style.display = 'none';
     currentFileText = null;
+    if (prev.fileHandle && prev.fileMeta) {
+      currentFileHandle = prev.fileHandle;
+      currentFileMeta = prev.fileMeta;
+      startFileWatch();
+    } else {
+      setCurrentFileSource(null);
+    }
     loadMarkdownText(prev.text, prev.filename);
   }
 
@@ -390,17 +523,35 @@
 
   // ===== Events =====
   function setupEvents() {
-    fileInput.addEventListener('change', e => {
+    fileInput.addEventListener('change', async e => {
       const file = e.target.files[0];
-      if (file) { loadFile(file); e.target.value = ''; }
+      if (file) { await loadFile(file); e.target.value = ''; }
     });
 
-    linkedFileInput.addEventListener('change', e => {
+    linkedFileInput.addEventListener('change', async e => {
       const file = e.target.files[0];
-      if (file) { loadFile(file); e.target.value = ''; }
+      if (file) { await loadFile(file); e.target.value = ''; }
     });
 
-    dropZone.addEventListener('click', () => fileInput.click());
+    dropZone.addEventListener('click', async () => {
+      if (window.showOpenFilePicker) {
+        try {
+          await pickFileHandle();
+          return;
+        } catch (e) {}
+      }
+      fileInput.click();
+    });
+
+    openFileBtn.addEventListener('click', async e => {
+      if (!window.showOpenFilePicker) return;
+      e.preventDefault();
+      try {
+        await pickFileHandle();
+      } catch (error) {
+        if (error && error.name !== 'AbortError') fileInput.click();
+      }
+    });
 
     document.addEventListener('dragover', e => {
       e.preventDefault();
@@ -409,11 +560,17 @@
     document.addEventListener('dragleave', e => {
       if (!e.relatedTarget) dropZone.classList.remove('drag-over');
     });
-    document.addEventListener('drop', e => {
+    document.addEventListener('drop', async e => {
       e.preventDefault();
       dropZone.classList.remove('drag-over');
       const file = e.dataTransfer.files[0];
-      if (file) loadFile(file);
+      if (!file) return;
+      if (currentFileText) {
+        await openDroppedFileInNewWindow(file);
+        return;
+      }
+      const droppedHandle = await extractDroppedFileHandle(e);
+      await loadFile(file, { fileHandle: droppedHandle });
     });
 
     document.getElementById('theme-light-btn').addEventListener('click', () => applyTheme('light'));
@@ -425,13 +582,37 @@
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
       if (themeMode === 'auto') applyTheme('auto');
     });
+
+    sidebarToggleBtn.addEventListener('click', () => {
+      setSidebarCollapsed(!isSidebarCollapsed);
+    });
+
+    let isResizing = false;
+    sidebarResizer.addEventListener('mousedown', e => {
+      e.preventDefault();
+      isResizing = true;
+    });
+
+    document.addEventListener('mousemove', e => {
+      if (!isResizing || isSidebarCollapsed || sidebar.classList.contains('hidden')) return;
+      const width = Math.max(180, Math.min(420, e.clientX));
+      sidebar.style.width = `${width}px`;
+    });
+
+    document.addEventListener('mouseup', () => {
+      isResizing = false;
+    });
+
+    window.addEventListener('beforeunload', stopFileWatch);
   }
 
   // ===== Init =====
-  function init() {
+  async function init() {
     setupMarkdownIt();
     loadSavedTheme();
     setupEvents();
+    setSidebarCollapsed(false);
+    await loadFromTransferIfPresent();
     if (window.i18n) window.i18n.init();
   }
 

@@ -8,28 +8,13 @@
   <link rel="stylesheet" href="lib/github.min.css" id="hljs-light-theme">
   <link rel="stylesheet" href="lib/github-dark.min.css" id="hljs-dark-theme" disabled>
   <link rel="stylesheet" href="styles.css">
-  <script>
-    // Early theme detection to prevent flash of wrong theme
-    (function () {
-      try {
-        var savedMode = localStorage.getItem('mdViewer_themeMode');
-        var theme = 'light';
-        if (savedMode === 'dark') {
-          theme = 'dark';
-        } else if (savedMode === 'auto' || !savedMode) {
-          if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-            theme = 'dark';
-          }
-        }
-        document.documentElement.setAttribute('data-theme', theme);
-      } catch (e) {}
-    })();
-  </script>
+  <script src="theme-init.js"></script>
 </head>
 <body>
   <div class="app-wrapper">
     <!-- Header toolbar -->
     <header class="header">
+      <span class="header-logo" aria-hidden="true">MD</span>
       <span class="header-title" id="file-title">Markdown Viewer</span>
 
       <label class="btn" id="open-file-btn" title="" data-i18n-title="openFile">
@@ -53,9 +38,13 @@
     <div class="main-area">
       <!-- Sidebar / TOC -->
       <aside class="sidebar hidden" id="sidebar">
-        <div class="sidebar-header" data-i18n="tableOfContents">Table of Contents</div>
+        <div class="sidebar-header">
+          <span class="sidebar-header-text" data-i18n="tableOfContents">Table of Contents</span>
+          <button class="btn sidebar-toggle-btn" id="sidebar-toggle-btn" title="Collapse sidebar">◀</button>
+        </div>
         <ul class="toc-list" id="toc-list"></ul>
       </aside>
+      <div class="sidebar-resizer hidden" id="sidebar-resizer"></div>
 
       <!-- Markdown content -->
       <main class="content-area" id="content-area">
