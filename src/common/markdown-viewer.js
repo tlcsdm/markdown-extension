@@ -8,7 +8,6 @@
   let currentFileHandle = null;
   let currentFileMeta = null;
   let fileWatchTimer = null;
-  let fileHistory = [];
   let themeMode = 'auto';
   let isSidebarCollapsed = false;
 
@@ -21,7 +20,6 @@
   const openFileBtn = document.getElementById('open-file-btn');
   const fileInput = document.getElementById('file-input');
   const linkedFileInput = document.getElementById('linked-file-input');
-  const backBtn = document.getElementById('back-btn');
   const contentArea = document.getElementById('content-area');
   const sidebarToggleBtn = document.getElementById('sidebar-toggle-btn');
   const sidebarResizer = document.getElementById('sidebar-resizer');
@@ -231,10 +229,9 @@
   // ===== TOC =====
   function buildTOC() {
     const headings = markdownBody.querySelectorAll('h1, h2, h3, h4, h5, h6');
-    const titleHeadings = markdownBody.querySelectorAll('h1');
     tocList.innerHTML = '';
 
-    if (headings.length === 0 || titleHeadings.length === 0) {
+    if (headings.length === 0) {
       setSidebarVisible(false);
       return;
     }
@@ -379,7 +376,7 @@
   }
 
   async function loadFile(file, options = {}) {
-    const pushHistoryEntry = options.pushHistoryEntry !== false;
+    const allowInCurrentWindow = options.allowInCurrentWindow === true;
     const fileHandle = options.fileHandle || null;
     if (!file.name.match(/\.(md|markdown)$/i)) {
       const msg = window.i18n ? window.i18n.getMessage('invalidFileType') : 'Please drop a .md or .markdown file';
@@ -388,9 +385,12 @@
     }
     try {
       const text = await file.text();
-      if (pushHistoryEntry) pushHistory();
+      if (currentFileText && !allowInCurrentWindow) {
+        await openFilePayloadInNewWindow({ text, filename: file.name });
+        return;
+      }
       setCurrentFileSource(fileHandle, file);
-      await loadMarkdownText(text, file.name);
+      await loadMarkdownText(text, file.name, { preserveScroll: false });
     } catch (e) {
       const msg = window.i18n ? window.i18n.getMessage('fileReadFailed') : 'Failed to read file';
       alert(msg);
@@ -404,7 +404,11 @@
     });
     if (!handles || handles.length === 0) return;
     const handle = handles[0];
-    await loadFile(await handle.getFile(), { fileHandle: handle });
+    if (currentFileText) {
+      await loadFile(await handle.getFile(), { fileHandle: null });
+      return;
+    }
+    await openExistingFileInCurrentWindow(handle);
   }
 
   async function extractDroppedFileHandle(event) {
@@ -420,16 +424,35 @@
     return null;
   }
 
-  async function openDroppedFileInNewWindow(file) {
+  async function openFilePayloadInNewWindow(payload) {
     try {
       const transferKey = `mdViewer_transfer_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-      const payload = { text: await file.text(), filename: file.name };
       localStorage.setItem(transferKey, JSON.stringify(payload));
       const url = new URL(window.location.href);
       url.searchParams.set('transfer', transferKey);
       window.open(url.toString(), '_blank', 'noopener');
     } catch (e) {
-      await loadFile(file);
+      if (payload && typeof payload.text === 'string') {
+        await loadMarkdownText(payload.text, payload.filename || 'Markdown Viewer');
+      }
+    }
+  }
+
+  async function openDroppedFileInNewWindow(file) {
+    try {
+      await openFilePayloadInNewWindow({ text: await file.text(), filename: file.name });
+    } catch (e) {
+      await loadFile(file, { allowInCurrentWindow: true });
+    }
+  }
+
+  async function openExistingFileInCurrentWindow(fileHandle) {
+    try {
+      const file = await fileHandle.getFile();
+      await loadFile(file, { fileHandle, allowInCurrentWindow: true });
+    } catch (e) {
+      const msg = window.i18n ? window.i18n.getMessage('fileReadFailed') : 'Failed to read file';
+      alert(msg);
     }
   }
 
@@ -451,34 +474,6 @@
     const cleanQuery = params.toString();
     const cleanUrl = `${window.location.pathname}${cleanQuery ? `?${cleanQuery}` : ''}`;
     history.replaceState(null, '', cleanUrl);
-  }
-
-  // ===== History =====
-  function pushHistory() {
-    if (currentFileText) {
-      fileHistory.push({
-        text: currentFileText,
-        filename: currentFileName,
-        fileHandle: currentFileHandle,
-        fileMeta: currentFileMeta ? { ...currentFileMeta } : null
-      });
-      backBtn.style.display = '';
-    }
-  }
-
-  function navigateBack() {
-    if (fileHistory.length === 0) return;
-    const prev = fileHistory.pop();
-    if (fileHistory.length === 0) backBtn.style.display = 'none';
-    currentFileText = null;
-    if (prev.fileHandle && prev.fileMeta) {
-      currentFileHandle = prev.fileHandle;
-      currentFileMeta = prev.fileMeta;
-      startFileWatch();
-    } else {
-      setCurrentFileSource(null);
-    }
-    loadMarkdownText(prev.text, prev.filename);
   }
 
   // ===== Theme =====
@@ -576,8 +571,6 @@
     document.getElementById('theme-light-btn').addEventListener('click', () => applyTheme('light'));
     document.getElementById('theme-dark-btn').addEventListener('click', () => applyTheme('dark'));
     document.getElementById('theme-auto-btn').addEventListener('click', () => applyTheme('auto'));
-
-    backBtn.addEventListener('click', navigateBack);
 
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
       if (themeMode === 'auto') applyTheme('auto');
