@@ -583,7 +583,13 @@
       for (const link of links) {
         const rect = link.getBoundingClientRect();
         if (e.clientY >= rect.top && e.clientY <= rect.bottom) {
-          const heading = document.querySelector(link.getAttribute('href'));
+          const href = link.getAttribute('href') || '';
+          let heading = null;
+          if (href.startsWith('#')) {
+            const rawId = href.slice(1);
+            const headingId = rawId.includes('%') ? decodeURIComponent(rawId) : rawId;
+            heading = document.getElementById(headingId);
+          }
           if (heading) {
             heading.scrollIntoView({ behavior: 'smooth', block: 'start' });
             setActiveTOC(link);
