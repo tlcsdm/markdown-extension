@@ -139,7 +139,6 @@ html, body {
   max-width: 340px;
   background: var(--sidebar-bg);
   border-right: 1px solid var(--sidebar-border);
-  overflow-y: auto;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -186,7 +185,7 @@ html, body {
 }
 
 .sidebar.collapsed .sidebar-header-text,
-.sidebar.collapsed .toc-list {
+.sidebar.collapsed .toc-scroll-wrapper {
   display: none;
 }
 
@@ -206,12 +205,15 @@ html, body {
   display: none;
 }
 
+.toc-scroll-wrapper {
+  flex: 1;
+  overflow-y: auto;
+}
+
 .toc-list {
   list-style: none;
   margin: 0;
   padding: 8px 0;
-  flex: 1;
-  overflow-y: auto;
   cursor: default;
 }
 
