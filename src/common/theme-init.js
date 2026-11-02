@@ -1,7 +1,7 @@
 // Early theme detection to prevent flash of wrong theme
 (function () {
   try {
-    var savedMode = sessionStorage.getItem('mdViewer_themeMode');
+    var savedMode = localStorage.getItem('mdViewer_themeMode');
     var theme = 'light';
     if (savedMode === 'dark') {
       theme = 'dark';

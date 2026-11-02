@@ -495,7 +495,7 @@
       if (btn) btn.classList.toggle('active', m === mode);
     });
 
-    try { sessionStorage.setItem('mdViewer_themeMode', mode); } catch (e) {}
+    try { localStorage.setItem('mdViewer_themeMode', mode); } catch (e) {}
 
     if (currentFileText) {
       initMermaid();
@@ -505,7 +505,7 @@
 
   function loadSavedTheme() {
     try {
-      applyTheme(sessionStorage.getItem('mdViewer_themeMode') || 'auto');
+      applyTheme(localStorage.getItem('mdViewer_themeMode') || 'auto');
     } catch (e) {
       applyTheme('auto');
     }
