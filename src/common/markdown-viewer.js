@@ -23,6 +23,7 @@
   const contentArea = document.getElementById('content-area');
   const sidebarToggleBtn = document.getElementById('sidebar-toggle-btn');
   const sidebarResizer = document.getElementById('sidebar-resizer');
+  const tocScrollWrapper = document.getElementById('toc-scroll-wrapper');
 
   // ===== PlantUML Encoder =====
   const pumlAlphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_';
@@ -576,11 +577,8 @@
     });
 
     // TOC navigation via coordinate delegation (toc-list is inert for Ctrl+F exclusion)
-    sidebar.addEventListener('click', e => {
+    tocScrollWrapper.addEventListener('click', e => {
       if (isSidebarCollapsed) return;
-      const tocRect = tocList.getBoundingClientRect();
-      if (e.clientX < tocRect.left || e.clientX > tocRect.right ||
-          e.clientY < tocRect.top || e.clientY > tocRect.bottom) return;
       const links = Array.from(tocList.querySelectorAll('a'));
       for (const link of links) {
         const rect = link.getBoundingClientRect();
@@ -595,17 +593,11 @@
       }
     });
 
-    sidebar.addEventListener('mousemove', e => {
+    tocScrollWrapper.addEventListener('mousemove', e => {
       if (isSidebarCollapsed) return;
-      const tocRect = tocList.getBoundingClientRect();
       const links = Array.from(tocList.querySelectorAll('a'));
       links.forEach(link => link.classList.remove('toc-hover'));
-      if (e.clientX < tocRect.left || e.clientX > tocRect.right ||
-          e.clientY < tocRect.top || e.clientY > tocRect.bottom) {
-        sidebar.style.cursor = '';
-        return;
-      }
-      sidebar.style.cursor = 'pointer';
+      tocScrollWrapper.style.cursor = 'pointer';
       for (const link of links) {
         const rect = link.getBoundingClientRect();
         if (e.clientY >= rect.top && e.clientY <= rect.bottom) {
@@ -615,8 +607,8 @@
       }
     });
 
-    sidebar.addEventListener('mouseleave', () => {
-      sidebar.style.cursor = '';
+    tocScrollWrapper.addEventListener('mouseleave', () => {
+      tocScrollWrapper.style.cursor = '';
       tocList.querySelectorAll('a.toc-hover').forEach(a => a.classList.remove('toc-hover'));
     });
 
