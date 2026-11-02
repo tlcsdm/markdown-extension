@@ -248,14 +248,13 @@
       const a = document.createElement('a');
       a.href = '#' + id;
       a.textContent = heading.textContent;
-      a.addEventListener('click', e => {
-        e.preventDefault();
-        heading.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        setActiveTOC(a);
-      });
       li.appendChild(a);
       tocList.appendChild(li);
     });
+
+    // Mark toc-list inert so Ctrl+F does not search sidebar text.
+    // Click and hover events are handled via delegation on the sidebar element.
+    tocList.setAttribute('inert', '');
 
     setupScrollSpy(headings);
   }
@@ -404,10 +403,6 @@
     });
     if (!handles || handles.length === 0) return;
     const handle = handles[0];
-    if (currentFileText) {
-      await loadFile(await handle.getFile(), { fileHandle: null });
-      return;
-    }
     await openExistingFileInCurrentWindow(handle);
   }
 
@@ -500,7 +495,7 @@
       if (btn) btn.classList.toggle('active', m === mode);
     });
 
-    try { localStorage.setItem('mdViewer_themeMode', mode); } catch (e) {}
+    try { sessionStorage.setItem('mdViewer_themeMode', mode); } catch (e) {}
 
     if (currentFileText) {
       initMermaid();
@@ -510,7 +505,7 @@
 
   function loadSavedTheme() {
     try {
-      applyTheme(localStorage.getItem('mdViewer_themeMode') || 'auto');
+      applyTheme(sessionStorage.getItem('mdViewer_themeMode') || 'auto');
     } catch (e) {
       applyTheme('auto');
     }
@@ -578,6 +573,51 @@
 
     sidebarToggleBtn.addEventListener('click', () => {
       setSidebarCollapsed(!isSidebarCollapsed);
+    });
+
+    // TOC navigation via coordinate delegation (toc-list is inert for Ctrl+F exclusion)
+    sidebar.addEventListener('click', e => {
+      if (isSidebarCollapsed) return;
+      const tocRect = tocList.getBoundingClientRect();
+      if (e.clientX < tocRect.left || e.clientX > tocRect.right ||
+          e.clientY < tocRect.top || e.clientY > tocRect.bottom) return;
+      const links = Array.from(tocList.querySelectorAll('a'));
+      for (const link of links) {
+        const rect = link.getBoundingClientRect();
+        if (e.clientY >= rect.top && e.clientY <= rect.bottom) {
+          const heading = document.querySelector(link.getAttribute('href'));
+          if (heading) {
+            heading.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            setActiveTOC(link);
+          }
+          break;
+        }
+      }
+    });
+
+    sidebar.addEventListener('mousemove', e => {
+      if (isSidebarCollapsed) return;
+      const tocRect = tocList.getBoundingClientRect();
+      const links = Array.from(tocList.querySelectorAll('a'));
+      links.forEach(link => link.classList.remove('toc-hover'));
+      if (e.clientX < tocRect.left || e.clientX > tocRect.right ||
+          e.clientY < tocRect.top || e.clientY > tocRect.bottom) {
+        sidebar.style.cursor = '';
+        return;
+      }
+      sidebar.style.cursor = 'pointer';
+      for (const link of links) {
+        const rect = link.getBoundingClientRect();
+        if (e.clientY >= rect.top && e.clientY <= rect.bottom) {
+          link.classList.add('toc-hover');
+          break;
+        }
+      }
+    });
+
+    sidebar.addEventListener('mouseleave', () => {
+      sidebar.style.cursor = '';
+      tocList.querySelectorAll('a.toc-hover').forEach(a => a.classList.remove('toc-hover'));
     });
 
     let isResizing = false;

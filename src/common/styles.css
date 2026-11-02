@@ -105,54 +105,21 @@ html, body {
   font-size: 14px;
   font-weight: 600;
   color: var(--text-secondary);
-  margin-right: 8px;
+  flex: 1;
+  min-width: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 300px;
 }
 
 .header-logo {
   width: 28px;
   height: 28px;
   border-radius: 8px;
-  display: inline-flex;
-  position: relative;
-  overflow: hidden;
-  align-items: center;
-  justify-content: center;
-  font-size: 11px;
-  font-weight: 700;
-  color: #ffffff;
-  letter-spacing: 0.4px;
-  background: linear-gradient(135deg, #0969da, #7c3aed);
-  box-shadow: 0 4px 10px rgba(9, 105, 218, 0.35);
-  isolation: isolate;
-}
-
-.header-logo::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: repeating-linear-gradient(
-    -45deg,
-    rgba(255, 255, 255, 0.28) 0 2px,
-    transparent 2px 6px
-  );
-  opacity: 0.45;
-  z-index: -1;
-}
-
-.header-logo::after {
-  content: '';
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.85);
-  box-shadow: -10px 10px 0 rgba(255, 255, 255, 0.42);
+  display: inline-block;
+  flex-shrink: 0;
+  object-fit: contain;
+  vertical-align: middle;
 }
 
 .header-spacer {
@@ -210,6 +177,12 @@ html, body {
   width: 44px !important;
   min-width: 44px;
   max-width: 44px;
+  overflow: hidden;
+}
+
+.sidebar.collapsed .sidebar-header {
+  padding: 8px 4px;
+  justify-content: center;
 }
 
 .sidebar.collapsed .sidebar-header-text,
@@ -239,6 +212,7 @@ html, body {
   padding: 8px 0;
   flex: 1;
   overflow-y: auto;
+  cursor: default;
 }
 
 .toc-list li {
@@ -256,7 +230,8 @@ html, body {
   border-left: 2px solid transparent;
 }
 
-.toc-list a:hover {
+.toc-list a:hover,
+.toc-list a.toc-hover {
   color: var(--sidebar-link-active);
   background-color: var(--bg-tertiary);
 }
