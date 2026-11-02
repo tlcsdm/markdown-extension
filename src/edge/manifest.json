@@ -22,7 +22,8 @@
     "service_worker": "background.js"
   },
   "permissions": [
-    "activeTab"
+    "activeTab",
+    "tabs"
   ],
   "host_permissions": [
     "https://kroki.io/*"
