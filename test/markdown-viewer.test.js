@@ -36,7 +36,13 @@ function createFileTitle() {
   };
 }
 
-function loadViewerHooks({ prefersDark = false, savedTheme = 'auto', throwOnSetTheme = false, storageEntries = {} } = {}) {
+function loadViewerHooks({
+  prefersDark = false,
+  savedTheme = 'auto',
+  throwOnSetTheme = false,
+  storageEntries = {},
+  localRenderer
+} = {}) {
   const attrs = {};
   const lightSheet = { disabled: false };
   const darkSheet = { disabled: true };
@@ -65,7 +71,8 @@ function loadViewerHooks({ prefersDark = false, savedTheme = 'auto', throwOnSetT
 
   const context = {
     window: {
-      matchMedia: () => ({ matches: prefersDark, addEventListener: () => {} })
+      matchMedia: () => ({ matches: prefersDark, addEventListener: () => {} }),
+      plantumlRenderer: localRenderer
     },
     document: {
       readyState: 'loading',
@@ -94,7 +101,7 @@ function loadViewerHooks({ prefersDark = false, savedTheme = 'auto', throwOnSetT
 
   const instrumented = source.replace(
     "if (document.readyState === 'loading') {",
-    "window.__mdViewerTestHooks = { applyTheme, loadSavedTheme, slugify, escapeHtml, encodePlantuml, setFileMissingState, normalizePlantumlServer, sanitizePlantumlServer, getPlantumlRenderSettings }; if (document.readyState === 'loading') {"
+    "window.__mdViewerTestHooks = { applyTheme, loadSavedTheme, slugify, escapeHtml, encodePlantuml, setFileMissingState, normalizePlantumlServer, sanitizePlantumlServer, getPlantumlRenderSettings, getLocalPlantumlRenderer }; if (document.readyState === 'loading') {"
   );
 
   vm.runInNewContext(instrumented, context, { filename: scriptPath });
@@ -170,4 +177,17 @@ test('markdown-viewer plantuml settings normalize custom server mode', () => {
   assert.equal(settings.server, 'https://example.com');
   assert.equal(env.hooks.normalizePlantumlServer(' https://x.test/ '), 'https://x.test');
   assert.equal(env.hooks.sanitizePlantumlServer('javascript:alert(1)', 'https://kroki.io'), 'https://kroki.io');
+});
+
+test('markdown-viewer local plantuml renderer hook resolves component renderer', async () => {
+  const env = loadViewerHooks({
+    localRenderer: {
+      render: async (code) => `<svg><text>${code}</text></svg>`
+    }
+  });
+  const renderer = env.hooks.getLocalPlantumlRenderer();
+  assert.equal(typeof renderer, 'function');
+  const result = await renderer('@startuml\nA->B\n@enduml');
+  assert.equal(typeof result, 'string');
+  assert.ok(result.includes('<svg>'));
 });

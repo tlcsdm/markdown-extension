@@ -54,9 +54,15 @@
     "message": "PlantUML 渲染"
   },
   "plantumlRenderLocal": {
-    "message": "本地渲染（localhost）"
+    "message": "本地组件渲染"
   },
   "plantumlRenderServer": {
     "message": "PlantUML 服务器渲染"
+  },
+  "plantumlLocalRendererMissing": {
+    "message": "本地 PlantUML 组件不可用。请启用服务器渲染或加载 PlantUML 插件/组件。"
+  },
+  "plantumlLocalRendererInvalid": {
+    "message": "本地 PlantUML 组件返回了无效的 SVG 输出"
   }
 }

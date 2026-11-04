@@ -31,7 +31,6 @@
   const plantumlServerInput = document.getElementById('plantuml-server-input');
 
   const DEFAULT_PLANTUML_SERVER = 'https://kroki.io';
-  const DEFAULT_LOCAL_PLANTUML_SERVER = 'http://127.0.0.1:8080/plantuml';
 
   // ===== PlantUML Encoder =====
   const pumlAlphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_';
@@ -113,6 +112,69 @@
       }
     } catch (e) {}
     return fallback;
+  }
+
+  function getLocalPlantumlRenderer() {
+    const candidates = [
+      window.plantumlRenderer,
+      window.PlantUMLRenderer,
+      window.plantuml
+    ];
+
+    for (const candidate of candidates) {
+      if (candidate && typeof candidate.render === 'function') {
+        return code => candidate.render(code);
+      }
+    }
+
+    if (typeof window.renderPlantUML === 'function') {
+      return code => window.renderPlantUML(code);
+    }
+
+    return null;
+  }
+
+  function createPlantumlImage(src) {
+    const img = document.createElement('img');
+    img.src = src;
+    img.alt = 'PlantUML diagram';
+    img.style.maxWidth = '100%';
+    return img;
+  }
+
+  function setPlantumlBlockError(block, message) {
+    block.innerHTML = `<div class="diagram-error">${escapeHtml(message)}</div>`;
+  }
+
+  async function renderPlantumlWithLocalComponent(block, code) {
+    const renderer = getLocalPlantumlRenderer();
+    if (!renderer) {
+      throw new Error(window.i18n ? window.i18n.getMessage('plantumlLocalRendererMissing') : 'Local PlantUML renderer is not available');
+    }
+
+    const output = await renderer(code);
+    if (typeof output !== 'string' || !output.trim()) {
+      throw new Error(window.i18n ? window.i18n.getMessage('plantumlLocalRendererInvalid') : 'Local PlantUML renderer returned empty output');
+    }
+
+    let svgUrl;
+    try {
+      const parsed = new DOMParser().parseFromString(output, 'image/svg+xml');
+      const svg = parsed.documentElement;
+      if (!svg || svg.tagName.toLowerCase() !== 'svg') {
+        throw new Error('invalid svg');
+      }
+      const serialized = new XMLSerializer().serializeToString(svg);
+      svgUrl = URL.createObjectURL(new Blob([serialized], { type: 'image/svg+xml' }));
+    } catch (e) {
+      throw new Error(window.i18n ? window.i18n.getMessage('plantumlLocalRendererInvalid') : 'Local PlantUML renderer returned invalid SVG');
+    }
+
+    const img = createPlantumlImage(svgUrl);
+    img.addEventListener('load', () => URL.revokeObjectURL(svgUrl), { once: true });
+    img.addEventListener('error', () => URL.revokeObjectURL(svgUrl), { once: true });
+    block.innerHTML = '';
+    block.appendChild(img);
   }
 
   function getPlantumlRenderSettings() {
@@ -272,11 +334,15 @@
   async function renderPlantumlBlocks() {
     const blocks = markdownBody.querySelectorAll('.plantuml-block[data-plantuml]');
     const settings = getPlantumlRenderSettings();
-    const selectedServer = settings.useLocal ? DEFAULT_LOCAL_PLANTUML_SERVER : settings.server;
-    const server = sanitizePlantumlServer(selectedServer, settings.useLocal ? DEFAULT_LOCAL_PLANTUML_SERVER : DEFAULT_PLANTUML_SERVER);
+    const server = sanitizePlantumlServer(settings.server, DEFAULT_PLANTUML_SERVER);
     for (const block of blocks) {
       const code = block.getAttribute('data-plantuml');
       try {
+        if (settings.useLocal) {
+          await renderPlantumlWithLocalComponent(block, code);
+          continue;
+        }
+
         let imgUrl;
         if (server.includes('kroki.io')) {
           const encoded = btoa(String.fromCharCode(...new TextEncoder().encode(code)));
@@ -285,17 +351,14 @@
         } else {
           imgUrl = `${server}/svg/${encodePlantuml(code)}`;
         }
-        const img = document.createElement('img');
-        img.src = imgUrl;
-        img.alt = 'PlantUML diagram';
-        img.style.maxWidth = '100%';
+        const img = createPlantumlImage(imgUrl);
         img.addEventListener('error', () => {
-          block.innerHTML = `<div class="diagram-error">${escapeHtml('PlantUML render failed')}</div>`;
+          setPlantumlBlockError(block, window.i18n ? window.i18n.getMessage('renderFailed') : 'Render failed');
         });
         block.innerHTML = '';
         block.appendChild(img);
       } catch (e) {
-        block.innerHTML = `<div class="diagram-error">${escapeHtml(String(e.message || e))}</div>`;
+        setPlantumlBlockError(block, String(e.message || e));
       }
     }
   }

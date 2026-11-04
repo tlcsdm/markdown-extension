@@ -54,9 +54,15 @@
     "message": "PlantUML Rendering"
   },
   "plantumlRenderLocal": {
-    "message": "Local rendering (localhost)"
+    "message": "Local component rendering"
   },
   "plantumlRenderServer": {
     "message": "PlantUML server rendering"
+  },
+  "plantumlLocalRendererMissing": {
+    "message": "Local PlantUML component is unavailable. Enable server rendering or load a PlantUML plugin/component."
+  },
+  "plantumlLocalRendererInvalid": {
+    "message": "Local PlantUML component returned invalid SVG output"
   }
 }

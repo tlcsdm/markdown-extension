@@ -54,9 +54,15 @@
     "message": "PlantUML レンダリング"
   },
   "plantumlRenderLocal": {
-    "message": "ローカル描画（localhost）"
+    "message": "ローカルコンポーネント描画"
   },
   "plantumlRenderServer": {
     "message": "PlantUML サーバー描画"
+  },
+  "plantumlLocalRendererMissing": {
+    "message": "ローカル PlantUML コンポーネントが利用できません。サーバー描画を有効にするか、PlantUML プラグイン/コンポーネントを読み込んでください。"
+  },
+  "plantumlLocalRendererInvalid": {
+    "message": "ローカル PlantUML コンポーネントが無効な SVG を返しました"
   }
 }
