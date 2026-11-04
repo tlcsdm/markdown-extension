@@ -49,5 +49,14 @@
   },
   "noHeadings": {
     "message": "未找到标题"
+  },
+  "plantumlRenderSettings": {
+    "message": "PlantUML 渲染"
+  },
+  "plantumlRenderLocal": {
+    "message": "本地渲染（localhost）"
+  },
+  "plantumlRenderServer": {
+    "message": "PlantUML 服务器渲染"
   }
 }

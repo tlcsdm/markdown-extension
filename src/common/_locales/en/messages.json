@@ -49,5 +49,14 @@
   },
   "noHeadings": {
     "message": "No headings found"
+  },
+  "plantumlRenderSettings": {
+    "message": "PlantUML Rendering"
+  },
+  "plantumlRenderLocal": {
+    "message": "Local rendering (localhost)"
+  },
+  "plantumlRenderServer": {
+    "message": "PlantUML server rendering"
   }
 }

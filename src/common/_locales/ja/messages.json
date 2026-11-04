@@ -49,5 +49,14 @@
   },
   "noHeadings": {
     "message": "見出しが見つかりません"
+  },
+  "plantumlRenderSettings": {
+    "message": "PlantUML レンダリング"
+  },
+  "plantumlRenderLocal": {
+    "message": "ローカル描画（localhost）"
+  },
+  "plantumlRenderServer": {
+    "message": "PlantUML サーバー描画"
   }
 }

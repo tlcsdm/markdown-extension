@@ -24,6 +24,14 @@
   const sidebarToggleBtn = document.getElementById('sidebar-toggle-btn');
   const sidebarResizer = document.getElementById('sidebar-resizer');
   const tocScrollWrapper = document.getElementById('toc-scroll-wrapper');
+  const plantumlSettingsBtn = document.getElementById('plantuml-settings-btn');
+  const plantumlSettingsPanel = document.getElementById('plantuml-settings-panel');
+  const plantumlLocalCheckbox = document.getElementById('plantuml-local-checkbox');
+  const plantumlServerCheckbox = document.getElementById('plantuml-server-checkbox');
+  const plantumlServerInput = document.getElementById('plantuml-server-input');
+
+  const DEFAULT_PLANTUML_SERVER = 'https://kroki.io';
+  const DEFAULT_LOCAL_PLANTUML_SERVER = 'http://127.0.0.1:8080/plantuml';
 
   // ===== PlantUML Encoder =====
   const pumlAlphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_';
@@ -89,6 +97,54 @@
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;');
+  }
+
+  function normalizePlantumlServer(server) {
+    return (server || '').trim().replace(/\/$/, '');
+  }
+
+  function getPlantumlRenderSettings() {
+    let useLocal = true;
+    let useServer = false;
+    let server = DEFAULT_PLANTUML_SERVER;
+    try {
+      const storedLocal = localStorage.getItem('mdViewer_plantumlUseLocal');
+      const storedServer = localStorage.getItem('mdViewer_plantumlUseServer');
+      useLocal = storedLocal === null ? true : storedLocal === 'true';
+      useServer = storedServer === null ? false : storedServer === 'true';
+      server = localStorage.getItem('mdViewer_plantumlServer') || DEFAULT_PLANTUML_SERVER;
+    } catch (e) {}
+
+    if (!useLocal && !useServer) useLocal = true;
+    if (useLocal && useServer) useServer = false;
+
+    return {
+      useLocal,
+      useServer,
+      server: normalizePlantumlServer(server) || DEFAULT_PLANTUML_SERVER
+    };
+  }
+
+  function savePlantumlRenderSettings(settings) {
+    try {
+      localStorage.setItem('mdViewer_plantumlUseLocal', String(!!settings.useLocal));
+      localStorage.setItem('mdViewer_plantumlUseServer', String(!!settings.useServer));
+      localStorage.setItem('mdViewer_plantumlServer', settings.server || DEFAULT_PLANTUML_SERVER);
+    } catch (e) {}
+  }
+
+  function updatePlantumlSettingsPanel() {
+    if (!plantumlLocalCheckbox || !plantumlServerCheckbox || !plantumlServerInput) return;
+    plantumlServerInput.disabled = !plantumlServerCheckbox.checked;
+  }
+
+  function loadPlantumlSettingsIntoUI() {
+    if (!plantumlLocalCheckbox || !plantumlServerCheckbox || !plantumlServerInput) return;
+    const settings = getPlantumlRenderSettings();
+    plantumlLocalCheckbox.checked = settings.useLocal;
+    plantumlServerCheckbox.checked = settings.useServer;
+    plantumlServerInput.value = settings.server || DEFAULT_PLANTUML_SERVER;
+    updatePlantumlSettingsPanel();
   }
 
   function setupMarkdownIt() {
@@ -203,10 +259,12 @@
 
   async function renderPlantumlBlocks() {
     const blocks = markdownBody.querySelectorAll('.plantuml-block[data-plantuml]');
+    const settings = getPlantumlRenderSettings();
+    const selectedServer = settings.useLocal ? DEFAULT_LOCAL_PLANTUML_SERVER : settings.server;
+    const server = normalizePlantumlServer(selectedServer);
     for (const block of blocks) {
       const code = block.getAttribute('data-plantuml');
       try {
-        const server = (localStorage.getItem('mdViewer_plantumlServer') || 'https://kroki.io').replace(/\/$/, '');
         let imgUrl;
         if (server.includes('kroki.io')) {
           const encoded = btoa(String.fromCharCode(...new TextEncoder().encode(code)));
@@ -219,6 +277,9 @@
         img.src = imgUrl;
         img.alt = 'PlantUML diagram';
         img.style.maxWidth = '100%';
+        img.addEventListener('error', () => {
+          block.innerHTML = `<div class="diagram-error">${escapeHtml('PlantUML render failed')}</div>`;
+        });
         block.innerHTML = '';
         block.appendChild(img);
       } catch (e) {
@@ -323,8 +384,16 @@
     contentArea.scrollTop = preserveScroll ? previousScrollTop : 0;
 
     initMermaid();
-    await renderMermaidBlocks();
-    await renderPlantumlBlocks();
+    try {
+      await renderMermaidBlocks();
+    } catch (e) {
+      console.warn('Mermaid rendering failed:', e);
+    }
+    try {
+      await renderPlantumlBlocks();
+    } catch (e) {
+      console.warn('PlantUML rendering failed:', e);
+    }
 
     setupLocalLinks();
   }
@@ -574,6 +643,54 @@
     document.getElementById('theme-dark-btn').addEventListener('click', () => applyTheme('dark'));
     document.getElementById('theme-auto-btn').addEventListener('click', () => applyTheme('auto'));
 
+    if (plantumlSettingsBtn && plantumlSettingsPanel) {
+      plantumlSettingsBtn.addEventListener('click', e => {
+        e.stopPropagation();
+        plantumlSettingsPanel.classList.toggle('hidden');
+      });
+      plantumlSettingsPanel.addEventListener('click', e => e.stopPropagation());
+      document.addEventListener('click', () => {
+        plantumlSettingsPanel.classList.add('hidden');
+      });
+    }
+
+    if (plantumlLocalCheckbox && plantumlServerCheckbox && plantumlServerInput) {
+      const saveAndRefresh = async () => {
+        savePlantumlRenderSettings({
+          useLocal: plantumlLocalCheckbox.checked,
+          useServer: plantumlServerCheckbox.checked,
+          server: normalizePlantumlServer(plantumlServerInput.value) || DEFAULT_PLANTUML_SERVER
+        });
+        if (currentFileText) {
+          await loadMarkdownText(currentFileText, currentFileName, { preserveScroll: true });
+        }
+      };
+
+      plantumlLocalCheckbox.addEventListener('change', async () => {
+        if (plantumlLocalCheckbox.checked) {
+          plantumlServerCheckbox.checked = false;
+        } else if (!plantumlServerCheckbox.checked) {
+          plantumlLocalCheckbox.checked = true;
+        }
+        updatePlantumlSettingsPanel();
+        await saveAndRefresh();
+      });
+
+      plantumlServerCheckbox.addEventListener('change', async () => {
+        if (plantumlServerCheckbox.checked) {
+          plantumlLocalCheckbox.checked = false;
+        } else if (!plantumlLocalCheckbox.checked) {
+          plantumlServerCheckbox.checked = true;
+        }
+        updatePlantumlSettingsPanel();
+        await saveAndRefresh();
+      });
+
+      plantumlServerInput.addEventListener('change', async () => {
+        await saveAndRefresh();
+      });
+    }
+
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
       if (themeMode === 'auto') applyTheme('auto');
     });
@@ -647,6 +764,7 @@
   async function init() {
     setupMarkdownIt();
     loadSavedTheme();
+    loadPlantumlSettingsIntoUI();
     setupEvents();
     setSidebarCollapsed(false);
     await loadFromTransferIfPresent();

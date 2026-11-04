@@ -131,6 +131,73 @@ html, body {
   min-width: 0;
 }
 
+.header-options {
+  grid-column: 3;
+  justify-self: end;
+  display: inline-flex;
+  align-items: center;
+}
+
+.plantuml-settings {
+  position: relative;
+}
+
+.plantuml-settings-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 20;
+  width: 280px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px var(--shadow);
+}
+
+.plantuml-settings-panel.hidden {
+  display: none;
+}
+
+.plantuml-settings-title {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.plantuml-settings-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.plantuml-settings-row input[type="checkbox"] {
+  margin: 0;
+}
+
+.plantuml-server-url {
+  align-items: flex-start;
+  flex-direction: column;
+}
+
+.plantuml-server-url input[type="text"] {
+  width: 100%;
+  padding: 6px 8px;
+  font-size: 13px;
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+}
+
+.plantuml-server-url input[type="text"]:disabled {
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
+}
+
 .main-area {
   display: flex;
   flex: 1;

@@ -36,7 +36,7 @@ function createFileTitle() {
   };
 }
 
-function loadViewerHooks({ prefersDark = false, savedTheme = 'auto', throwOnSetTheme = false } = {}) {
+function loadViewerHooks({ prefersDark = false, savedTheme = 'auto', throwOnSetTheme = false, storageEntries = {} } = {}) {
   const attrs = {};
   const lightSheet = { disabled: false };
   const darkSheet = { disabled: true };
@@ -58,6 +58,11 @@ function loadViewerHooks({ prefersDark = false, savedTheme = 'auto', throwOnSetT
     'file-title': fileTitle
   };
 
+  const storage = new Map(Object.entries({
+    mdViewer_themeMode: savedTheme,
+    ...storageEntries
+  }));
+
   const context = {
     window: {
       matchMedia: () => ({ matches: prefersDark, addEventListener: () => {} })
@@ -72,11 +77,12 @@ function loadViewerHooks({ prefersDark = false, savedTheme = 'auto', throwOnSetT
       addEventListener: () => {}
     },
     localStorage: {
-      getItem: () => savedTheme,
-      setItem: () => {
-        if (throwOnSetTheme) {
+      getItem: (key) => storage.has(key) ? storage.get(key) : null,
+      setItem: (key, value) => {
+        if (throwOnSetTheme && key === 'mdViewer_themeMode') {
           throw new Error('write failed');
         }
+        storage.set(key, String(value));
       }
     },
     history: { replaceState: () => {} },
@@ -88,7 +94,7 @@ function loadViewerHooks({ prefersDark = false, savedTheme = 'auto', throwOnSetT
 
   const instrumented = source.replace(
     "if (document.readyState === 'loading') {",
-    "window.__mdViewerTestHooks = { applyTheme, loadSavedTheme, slugify, escapeHtml, encodePlantuml, setFileMissingState }; if (document.readyState === 'loading') {"
+    "window.__mdViewerTestHooks = { applyTheme, loadSavedTheme, slugify, escapeHtml, encodePlantuml, setFileMissingState, normalizePlantumlServer, getPlantumlRenderSettings }; if (document.readyState === 'loading') {"
   );
 
   vm.runInNewContext(instrumented, context, { filename: scriptPath });
@@ -140,4 +146,27 @@ test('markdown-viewer setFileMissingState toggles missing title style', () => {
   assert.equal(env.fileTitle.missing, true);
   env.hooks.setFileMissingState(false);
   assert.equal(env.fileTitle.missing, false);
+});
+
+test('markdown-viewer plantuml settings default to local rendering', () => {
+  const env = loadViewerHooks();
+  const settings = env.hooks.getPlantumlRenderSettings();
+  assert.equal(settings.useLocal, true);
+  assert.equal(settings.useServer, false);
+  assert.equal(settings.server, 'https://kroki.io');
+});
+
+test('markdown-viewer plantuml settings normalize custom server mode', () => {
+  const env = loadViewerHooks({
+    storageEntries: {
+      mdViewer_plantumlUseLocal: 'false',
+      mdViewer_plantumlUseServer: 'true',
+      mdViewer_plantumlServer: 'https://example.com/'
+    }
+  });
+  const settings = env.hooks.getPlantumlRenderSettings();
+  assert.equal(settings.useLocal, false);
+  assert.equal(settings.useServer, true);
+  assert.equal(settings.server, 'https://example.com');
+  assert.equal(env.hooks.normalizePlantumlServer(' https://x.test/ '), 'https://x.test');
 });

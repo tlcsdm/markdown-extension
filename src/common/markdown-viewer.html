@@ -28,6 +28,27 @@
       </div>
 
       <span class="header-title" id="file-title">Markdown Viewer</span>
+
+      <div class="header-options">
+        <div class="plantuml-settings">
+          <button class="btn" id="plantuml-settings-btn" type="button" data-i18n-title="plantumlRenderSettings" aria-label="PlantUML settings">🧩</button>
+          <div class="plantuml-settings-panel hidden" id="plantuml-settings-panel">
+            <div class="plantuml-settings-title" data-i18n="plantumlRenderSettings">PlantUML Rendering</div>
+            <label class="plantuml-settings-row">
+              <input type="checkbox" id="plantuml-local-checkbox">
+              <span data-i18n="plantumlRenderLocal">Local rendering</span>
+            </label>
+            <label class="plantuml-settings-row">
+              <input type="checkbox" id="plantuml-server-checkbox">
+              <span data-i18n="plantumlRenderServer">PlantUML server rendering</span>
+            </label>
+            <label class="plantuml-settings-row plantuml-server-url">
+              <span data-i18n="plantumlServerLabel">PlantUML Server</span>
+              <input type="text" id="plantuml-server-input" data-i18n-placeholder="plantumlServerPlaceholder" placeholder="https://kroki.io">
+            </label>
+          </div>
+        </div>
+      </div>
     </header>
 
     <!-- Main content area -->
