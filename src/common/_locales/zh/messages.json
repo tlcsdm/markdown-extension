@@ -61,5 +61,17 @@
   },
   "noHeadings": {
     "message": "未找到标题"
+  },
+  "copyPlantumlSource": {
+    "message": "复制源码"
+  },
+  "copied": {
+    "message": "已复制"
+  },
+  "copyFailed": {
+    "message": "复制失败"
+  },
+  "copyUnavailable": {
+    "message": "当前环境不支持复制"
   }
 }

@@ -61,5 +61,17 @@
   },
   "noHeadings": {
     "message": "見出しが見つかりません"
+  },
+  "copyPlantumlSource": {
+    "message": "ソースをコピー"
+  },
+  "copied": {
+    "message": "コピーしました"
+  },
+  "copyFailed": {
+    "message": "コピーに失敗しました"
+  },
+  "copyUnavailable": {
+    "message": "この環境ではコピーできません"
   }
 }

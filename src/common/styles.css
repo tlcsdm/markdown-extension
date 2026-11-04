@@ -131,9 +131,12 @@ html, body {
   min-width: 0;
 }
 
-.header-settings {
+.header-controls {
   grid-column: 3;
   justify-self: end;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .main-area {
@@ -534,12 +537,24 @@ html, body {
 
 /* ===== PlantUML diagrams ===== */
 .plantuml-block {
+  position: relative;
   text-align: center;
   margin: 16px 0;
   padding: 16px;
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: 6px;
+}
+
+.plantuml-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 8px;
+}
+
+.plantuml-copy-btn {
+  font-size: 12px;
+  padding: 4px 8px;
 }
 
 .plantuml-block img,

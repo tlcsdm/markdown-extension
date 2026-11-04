@@ -41,6 +41,7 @@ function loadViewerHooks({
   prefersDark = false,
   savedTheme = 'auto',
   throwOnSetTheme = false,
+  clipboardWriteText = null,
   pako = {
     deflate: (bytes) => bytes,
     deflateRaw: (bytes) => bytes
@@ -89,6 +90,7 @@ function loadViewerHooks({
         }
       }
     },
+    navigator: clipboardWriteText ? { clipboard: { writeText: clipboardWriteText } } : {},
     history: { replaceState: () => {} },
     URLSearchParams,
     URL,
@@ -100,7 +102,7 @@ function loadViewerHooks({
 
   const instrumented = source.replace(
     "if (document.readyState === 'loading') {",
-    "window.__mdViewerTestHooks = { applyTheme, loadSavedTheme, slugify, escapeHtml, encodePlantuml, setFileMissingState, normalizePlantumlServer, buildPlantumlImageUrl }; if (document.readyState === 'loading') {"
+    "window.__mdViewerTestHooks = { applyTheme, loadSavedTheme, slugify, escapeHtml, encodePlantuml, setFileMissingState, normalizePlantumlServer, buildPlantumlImageUrl, copyPlantumlSource }; if (document.readyState === 'loading') {"
   );
 
   vm.runInNewContext(instrumented, context, { filename: scriptPath });
@@ -180,4 +182,16 @@ test('markdown-viewer supports custom PlantUML server endpoint', () => {
   assert.ok(actualUrl.startsWith('https://www.plantuml.com/plantuml/svg/'));
   assert.equal(env.hooks.normalizePlantumlServer('  '), 'https://kroki.io');
   assert.equal(env.hooks.normalizePlantumlServer('javascript:alert(1)'), 'https://kroki.io');
+});
+
+test('markdown-viewer copyPlantumlSource handles clipboard availability', async () => {
+  const writes = [];
+  const withClipboard = loadViewerHooks({
+    clipboardWriteText: async (text) => { writes.push(text); }
+  });
+  assert.equal(await withClipboard.hooks.copyPlantumlSource('@startuml'), true);
+  assert.deepEqual(writes, ['@startuml']);
+
+  const withoutClipboard = loadViewerHooks();
+  assert.equal(await withoutClipboard.hooks.copyPlantumlSource('@startuml'), false);
 });

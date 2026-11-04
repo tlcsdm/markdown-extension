@@ -257,6 +257,41 @@
     }
   }
 
+  function getI18nMessage(key, fallback) {
+    return window.i18n ? window.i18n.getMessage(key) : fallback;
+  }
+
+  async function copyPlantumlSource(code) {
+    if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+      await navigator.clipboard.writeText(code);
+      return true;
+    }
+    return false;
+  }
+
+  function createPlantumlActions(block, code) {
+    const actions = document.createElement('div');
+    actions.className = 'plantuml-actions';
+    const copyBtn = document.createElement('button');
+    copyBtn.type = 'button';
+    copyBtn.className = 'btn plantuml-copy-btn';
+    copyBtn.textContent = getI18nMessage('copyPlantumlSource', 'Copy source');
+    copyBtn.addEventListener('click', async () => {
+      const copyDefault = getI18nMessage('copyPlantumlSource', 'Copy source');
+      try {
+        const copied = await copyPlantumlSource(code);
+        copyBtn.textContent = copied
+          ? getI18nMessage('copied', 'Copied')
+          : getI18nMessage('copyUnavailable', 'Copy unavailable');
+      } catch (e) {
+        copyBtn.textContent = getI18nMessage('copyFailed', 'Copy failed');
+      }
+      setTimeout(() => { copyBtn.textContent = copyDefault; }, 1200);
+    });
+    actions.appendChild(copyBtn);
+    block.appendChild(actions);
+  }
+
   async function renderPlantumlBlocks() {
     const blocks = markdownBody.querySelectorAll('.plantuml-block[data-plantuml]');
     for (const block of blocks) {
@@ -266,14 +301,17 @@
         img.src = buildPlantumlImageUrl(code, getPlantumlServer());
         img.alt = 'PlantUML diagram';
         img.style.maxWidth = '100%';
+        block.textContent = '';
+        createPlantumlActions(block, code);
         img.addEventListener('error', () => {
           const errorElement = document.createElement('div');
           errorElement.className = 'diagram-error';
           errorElement.textContent = 'PlantUML render failed';
+          const actionNode = block.querySelector('.plantuml-actions');
           block.textContent = '';
+          if (actionNode) block.appendChild(actionNode);
           block.appendChild(errorElement);
         }, { once: true });
-        block.innerHTML = '';
         block.appendChild(img);
       } catch (e) {
         const errorElement = document.createElement('div');

@@ -61,5 +61,17 @@
   },
   "noHeadings": {
     "message": "No headings found"
+  },
+  "copyPlantumlSource": {
+    "message": "Copy source"
+  },
+  "copied": {
+    "message": "Copied"
+  },
+  "copyFailed": {
+    "message": "Copy failed"
+  },
+  "copyUnavailable": {
+    "message": "Copy unavailable"
   }
 }
