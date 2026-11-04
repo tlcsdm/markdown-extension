@@ -68,7 +68,15 @@
     if (!/^[a-z][a-z0-9+\-.]*:\/\//i.test(normalized)) {
       normalized = `https://${normalized}`;
     }
-    return normalized;
+    try {
+      const parsed = new URL(normalized);
+      if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
+        return defaultPlantumlServer;
+      }
+      return `${parsed.origin}${parsed.pathname}`.replace(/\/+$/, '');
+    } catch (e) {
+      return defaultPlantumlServer;
+    }
   }
 
   function getPlantumlServer() {
@@ -259,12 +267,20 @@
         img.alt = 'PlantUML diagram';
         img.style.maxWidth = '100%';
         img.addEventListener('error', () => {
-          block.innerHTML = '<div class="diagram-error">PlantUML render failed</div>';
+          const errorElement = document.createElement('div');
+          errorElement.className = 'diagram-error';
+          errorElement.textContent = 'PlantUML render failed';
+          block.textContent = '';
+          block.appendChild(errorElement);
         }, { once: true });
         block.innerHTML = '';
         block.appendChild(img);
       } catch (e) {
-        block.innerHTML = `<div class="diagram-error">${escapeHtml(String(e.message || e))}</div>`;
+        const errorElement = document.createElement('div');
+        errorElement.className = 'diagram-error';
+        errorElement.textContent = String(e.message || e);
+        block.textContent = '';
+        block.appendChild(errorElement);
       }
     }
   }

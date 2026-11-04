@@ -179,4 +179,5 @@ test('markdown-viewer supports custom PlantUML server endpoint', () => {
 
   assert.ok(actualUrl.startsWith('https://www.plantuml.com/plantuml/svg/'));
   assert.equal(env.hooks.normalizePlantumlServer('  '), 'https://kroki.io');
+  assert.equal(env.hooks.normalizePlantumlServer('javascript:alert(1)'), 'https://kroki.io');
 });
