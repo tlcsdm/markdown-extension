@@ -13,22 +13,21 @@
   <div class="app-wrapper">
     <!-- Header toolbar -->
     <header class="header">
-      <img class="header-logo" src="icons/icon48.png" alt="Markdown Viewer">
-      <span class="header-title" id="file-title">Markdown Viewer</span>
+      <div class="header-actions">
+        <label class="btn" id="open-file-btn" title="" data-i18n-title="openFile">
+          <input type="file" id="file-input" accept=".md,.markdown" style="display:none">
+          📂 <span data-i18n="openFile">Open File</span>
+        </label>
 
-      <label class="btn" id="open-file-btn" title="" data-i18n-title="openFile">
-        <input type="file" id="file-input" accept=".md,.markdown" style="display:none">
-        📂 <span data-i18n="openFile">Open File</span>
-      </label>
-
-      <div class="header-spacer"></div>
-
-      <!-- Theme toggle -->
-      <div class="btn-group" role="group" aria-label="Theme">
-        <button class="btn" id="theme-light-btn" data-i18n-title="themeLight" aria-label="Light theme">☀️</button>
-        <button class="btn active" id="theme-auto-btn" data-i18n-title="themeAuto" aria-label="Auto theme">💻</button>
-        <button class="btn" id="theme-dark-btn" data-i18n-title="themeDark" aria-label="Dark theme">🌙</button>
+        <!-- Theme toggle -->
+        <div class="btn-group" role="group" aria-label="Theme">
+          <button class="btn" id="theme-light-btn" data-i18n-title="themeLight" aria-label="Light theme">☀️</button>
+          <button class="btn active" id="theme-auto-btn" data-i18n-title="themeAuto" aria-label="Auto theme">💻</button>
+          <button class="btn" id="theme-dark-btn" data-i18n-title="themeDark" aria-label="Dark theme">🌙</button>
+        </div>
       </div>
+
+      <span class="header-title" id="file-title">Markdown Viewer</span>
     </header>
 
     <!-- Main content area -->

@@ -273,6 +273,10 @@
     sidebarToggleBtn.title = collapsed ? 'Expand sidebar' : 'Collapse sidebar';
   }
 
+  function setFileMissingState(isMissing) {
+    fileTitle.classList.toggle('missing-file', !!isMissing);
+  }
+
   function setActiveTOC(activeLink) {
     tocList.querySelectorAll('a').forEach(a => a.classList.remove('active'));
     if (activeLink) activeLink.classList.add('active');
@@ -302,6 +306,7 @@
 
     document.title = filename || 'Markdown Viewer';
     fileTitle.textContent = filename || 'Markdown Viewer';
+    setFileMissingState(false);
 
     dropZone.classList.add('hidden');
     markdownBody.classList.remove('hidden');
@@ -370,6 +375,7 @@
       currentFileMeta = { lastModified: latestFile.lastModified, size: latestFile.size };
       await loadMarkdownText(await latestFile.text(), latestFile.name, { preserveScroll: true });
     } catch (e) {
+      setFileMissingState(e && e.name === 'NotFoundError');
       console.warn('File watch stopped:', e);
       setCurrentFileSource(null);
     }

@@ -21,6 +21,21 @@ function createButton() {
   };
 }
 
+function createFileTitle() {
+  return {
+    textContent: '',
+    missing: false,
+    classList: {
+      toggle(name, force) {
+        if (name === 'missing-file') {
+          this._owner.missing = !!force;
+        }
+      },
+      _owner: null
+    }
+  };
+}
+
 function loadViewerHooks({ prefersDark = false, savedTheme = 'auto', throwOnSetTheme = false } = {}) {
   const attrs = {};
   const lightSheet = { disabled: false };
@@ -28,16 +43,19 @@ function loadViewerHooks({ prefersDark = false, savedTheme = 'auto', throwOnSetT
   const lightBtn = createButton();
   const darkBtn = createButton();
   const autoBtn = createButton();
+  const fileTitle = createFileTitle();
   lightBtn.classList._owner = lightBtn;
   darkBtn.classList._owner = darkBtn;
   autoBtn.classList._owner = autoBtn;
+  fileTitle.classList._owner = fileTitle;
 
   const elementMap = {
     'hljs-light-theme': lightSheet,
     'hljs-dark-theme': darkSheet,
     'theme-light-btn': lightBtn,
     'theme-dark-btn': darkBtn,
-    'theme-auto-btn': autoBtn
+    'theme-auto-btn': autoBtn,
+    'file-title': fileTitle
   };
 
   const context = {
@@ -70,7 +88,7 @@ function loadViewerHooks({ prefersDark = false, savedTheme = 'auto', throwOnSetT
 
   const instrumented = source.replace(
     "if (document.readyState === 'loading') {",
-    "window.__mdViewerTestHooks = { applyTheme, loadSavedTheme, slugify, escapeHtml, encodePlantuml }; if (document.readyState === 'loading') {"
+    "window.__mdViewerTestHooks = { applyTheme, loadSavedTheme, slugify, escapeHtml, encodePlantuml, setFileMissingState }; if (document.readyState === 'loading') {"
   );
 
   vm.runInNewContext(instrumented, context, { filename: scriptPath });
@@ -82,7 +100,8 @@ function loadViewerHooks({ prefersDark = false, savedTheme = 'auto', throwOnSetT
     darkSheet,
     lightBtn,
     darkBtn,
-    autoBtn
+    autoBtn,
+    fileTitle
   };
 }
 
@@ -113,4 +132,12 @@ test('markdown-viewer utility helpers run expected branches', () => {
   const encoded = env.hooks.encodePlantuml('abc');
   assert.equal(typeof encoded, 'string');
   assert.ok(encoded.length > 0);
+});
+
+test('markdown-viewer setFileMissingState toggles missing title style', () => {
+  const env = loadViewerHooks({ prefersDark: false });
+  env.hooks.setFileMissingState(true);
+  assert.equal(env.fileTitle.missing, true);
+  env.hooks.setFileMissingState(false);
+  assert.equal(env.fileTitle.missing, false);
 });
