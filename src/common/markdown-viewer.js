@@ -103,6 +103,18 @@
     return (server || '').trim().replace(/\/$/, '');
   }
 
+  function sanitizePlantumlServer(server, fallback) {
+    const normalized = normalizePlantumlServer(server);
+    if (!normalized) return fallback;
+    try {
+      const parsed = new URL(normalized);
+      if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+        return parsed.href.replace(/\/$/, '');
+      }
+    } catch (e) {}
+    return fallback;
+  }
+
   function getPlantumlRenderSettings() {
     let useLocal = true;
     let useServer = false;
@@ -121,7 +133,7 @@
     return {
       useLocal,
       useServer,
-      server: normalizePlantumlServer(server) || DEFAULT_PLANTUML_SERVER
+      server: sanitizePlantumlServer(server, DEFAULT_PLANTUML_SERVER)
     };
   }
 
@@ -261,7 +273,7 @@
     const blocks = markdownBody.querySelectorAll('.plantuml-block[data-plantuml]');
     const settings = getPlantumlRenderSettings();
     const selectedServer = settings.useLocal ? DEFAULT_LOCAL_PLANTUML_SERVER : settings.server;
-    const server = normalizePlantumlServer(selectedServer);
+    const server = sanitizePlantumlServer(selectedServer, settings.useLocal ? DEFAULT_LOCAL_PLANTUML_SERVER : DEFAULT_PLANTUML_SERVER);
     for (const block of blocks) {
       const code = block.getAttribute('data-plantuml');
       try {
