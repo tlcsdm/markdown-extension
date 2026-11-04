@@ -138,6 +138,7 @@ scripts/
 The extension requires:
 
 - **`activeTab`** — to open the viewer in a new tab.
+- **`tabs`** — to apply per-tab zoom settings so each viewer tab can zoom independently.
 - **`https://kroki.io/*`** — for PlantUML rendering (can be changed in settings).
 - **Allow access to file URLs** — must be manually enabled in `chrome://extensions` to render local files directly.
 
