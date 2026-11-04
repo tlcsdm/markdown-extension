@@ -4,6 +4,7 @@ const os = require('node:os');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 const test = require('node:test');
+const vm = require('node:vm');
 
 const repoRoot = path.join(__dirname, '..');
 
@@ -24,6 +25,39 @@ function copyScript(tmpRoot, fileName) {
 
 function runNode(args, cwd) {
   return spawnSync(process.execPath, args, { cwd, encoding: 'utf8' });
+}
+
+function runScriptInVm(scriptPath, { argv, fsMock }) {
+  const code = fs.readFileSync(scriptPath, 'utf8');
+  let exitCode = null;
+  const processMock = {
+    argv: ['node', scriptPath, ...argv],
+    exit: (code) => {
+      exitCode = code;
+      throw new Error(`__EXIT__${code}`);
+    }
+  };
+
+  const context = {
+    require: (name) => {
+      if (name === 'fs') return fsMock;
+      if (name === 'path') return path;
+      return require(name);
+    },
+    __dirname: path.dirname(scriptPath),
+    process: processMock,
+    console: { log: () => {}, error: () => {}, warn: () => {} }
+  };
+
+  try {
+    vm.runInNewContext(code, context, { filename: scriptPath });
+  } catch (error) {
+    if (!String(error.message).startsWith('__EXIT__')) {
+      throw error;
+    }
+  }
+
+  return exitCode;
 }
 
 function createBuildFixture({ includeChrome = true, includeEdge = true } = {}) {
@@ -91,13 +125,47 @@ test('build script exits when target source directory is missing', () => {
   assert.match(result.stderr, /Source directory not found/);
 });
 
+test('build script creates dist directory when missing', () => {
+  const scriptPath = path.join(repoRoot, 'scripts', 'build.js');
+  const calls = [];
+  const fsMock = {
+    existsSync: (inputPath) => {
+      if (inputPath.endsWith(path.join('markdown-extension', 'dist'))) return false;
+      return true;
+    },
+    mkdirSync: (dir, options) => { calls.push({ dir, options }); },
+    readdirSync: () => [],
+    copyFileSync: () => {},
+    rmSync: () => {}
+  };
+
+  const exitCode = runScriptInVm(scriptPath, { argv: ['chrome'], fsMock });
+  assert.equal(exitCode, null);
+  assert.equal(calls.length > 0, true);
+});
+
+test('build script exits for missing browser source branch in script path', () => {
+  const scriptPath = path.join(repoRoot, 'scripts', 'build.js');
+  const fsMock = {
+    existsSync: (inputPath) => !inputPath.endsWith(path.join('src', 'chrome')),
+    mkdirSync: () => {},
+    readdirSync: () => [],
+    copyFileSync: () => {},
+    rmSync: () => {}
+  };
+
+  const exitCode = runScriptInVm(scriptPath, { argv: ['chrome'], fsMock });
+  assert.equal(exitCode, 1);
+});
+
 test('download-libs copies expected library files', () => {
-  const result = runNode(['scripts/download-libs.js'], repoRoot);
+  const tmpRoot = createDownloadFixture({ includeAllSources: true });
+  const result = runNode(['scripts/download-libs.js'], tmpRoot);
 
   assert.equal(result.status, 0);
-  assert.equal(fs.existsSync(path.join(repoRoot, 'src/common/lib/markdown-it.min.js')), true);
-  assert.equal(fs.existsSync(path.join(repoRoot, 'src/common/lib/mermaid.min.js')), true);
-  assert.equal(fs.existsSync(path.join(repoRoot, 'src/common/lib/pako_deflate.min.js')), true);
+  assert.equal(fs.existsSync(path.join(tmpRoot, 'src/common/lib/markdown-it.min.js')), true);
+  assert.equal(fs.existsSync(path.join(tmpRoot, 'src/common/lib/mermaid.min.js')), true);
+  assert.equal(fs.existsSync(path.join(tmpRoot, 'src/common/lib/pako_deflate.min.js')), true);
 });
 
 test('download-libs exits when a source library is missing', () => {
@@ -106,4 +174,35 @@ test('download-libs exits when a source library is missing', () => {
 
   assert.equal(result.status, 1);
   assert.match(result.stderr, /Source not found/);
+});
+
+test('download-libs creates lib directory when missing', () => {
+  const scriptPath = path.join(repoRoot, 'scripts', 'download-libs.js');
+  const calls = [];
+  const fsMock = {
+    existsSync: (inputPath) => {
+      if (inputPath.endsWith(path.join('src', 'common', 'lib'))) return false;
+      return true;
+    },
+    mkdirSync: (dir, options) => { calls.push({ dir, options }); },
+    copyFileSync: () => {},
+    statSync: () => ({ size: 2048 })
+  };
+
+  const exitCode = runScriptInVm(scriptPath, { argv: [], fsMock });
+  assert.equal(exitCode, null);
+  assert.equal(calls.length > 0, true);
+});
+
+test('download-libs exits when required source is missing in script branch', () => {
+  const scriptPath = path.join(repoRoot, 'scripts', 'download-libs.js');
+  const fsMock = {
+    existsSync: (inputPath) => !inputPath.includes(path.join('mermaid', 'dist', 'mermaid.min.js')),
+    mkdirSync: () => {},
+    copyFileSync: () => {},
+    statSync: () => ({ size: 2048 })
+  };
+
+  const exitCode = runScriptInVm(scriptPath, { argv: [], fsMock });
+  assert.equal(exitCode, 1);
 });
