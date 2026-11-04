@@ -131,6 +131,11 @@ html, body {
   min-width: 0;
 }
 
+.header-settings {
+  grid-column: 3;
+  justify-self: end;
+}
+
 .main-area {
   display: flex;
   flex: 1;
@@ -569,6 +574,55 @@ html, body {
   animation: spin 0.8s linear infinite;
   vertical-align: middle;
   margin-right: 8px;
+}
+
+/* ===== Settings ===== */
+.settings-dialog {
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  width: min(90vw, 440px);
+  box-shadow: 0 20px 40px var(--shadow);
+}
+
+.settings-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.settings-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px;
+}
+
+.settings-form h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.settings-section h3 {
+  margin: 0 0 8px;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.settings-section label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.settings-section input {
+  width: 100%;
+}
+
+.settings-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
 }
 
 @keyframes spin {

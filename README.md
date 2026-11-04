@@ -80,6 +80,9 @@ Bob --> Alice: Hi there!
 
 PlantUML diagrams are rendered via [Kroki](https://kroki.io) by default (requires internet access).
 
+You can change the server in **Settings → PlantUML Rendering Service → PlantUML Server**.
+The input supports both Kroki-compatible endpoints (for example `https://kroki.io`) and PlantUML server endpoints (for example `https://www.plantuml.com/plantuml`).
+
 ### Syntax Highlighting
 
 All common programming languages are supported via [highlight.js](https://highlightjs.org/).

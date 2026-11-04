@@ -20,6 +20,15 @@
   "themeAuto": {
     "message": "Auto"
   },
+  "settings": {
+    "message": "Settings"
+  },
+  "save": {
+    "message": "Save"
+  },
+  "cancel": {
+    "message": "Cancel"
+  },
   "tableOfContents": {
     "message": "Table of Contents"
   },
@@ -40,6 +49,9 @@
   },
   "plantumlServerPlaceholder": {
     "message": "https://kroki.io"
+  },
+  "plantumlSettingsGroupLabel": {
+    "message": "PlantUML Rendering Service"
   },
   "openLinkedFile": {
     "message": "Open linked file"

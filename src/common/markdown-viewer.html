@@ -28,6 +28,9 @@
       </div>
 
       <span class="header-title" id="file-title">Markdown Viewer</span>
+      <div class="header-settings">
+        <button class="btn" id="settings-btn" data-i18n="settings">Settings</button>
+      </div>
     </header>
 
     <!-- Main content area -->
@@ -62,6 +65,31 @@
 
   <!-- Hidden file input for linked files -->
   <input type="file" id="linked-file-input" accept=".md,.markdown" style="display:none">
+
+  <dialog id="settings-dialog" class="settings-dialog">
+    <form method="dialog" class="settings-form">
+      <h2 data-i18n="settings">Settings</h2>
+      <section class="settings-section">
+        <h3 data-i18n="plantumlSettingsGroupLabel">PlantUML Rendering Service</h3>
+        <label for="plantuml-server-input" data-i18n="plantumlServerLabel">PlantUML Server</label>
+        <input
+          id="plantuml-server-input"
+          type="url"
+          list="plantuml-server-options"
+          data-i18n-placeholder="plantumlServerPlaceholder"
+          placeholder="https://kroki.io"
+        >
+        <datalist id="plantuml-server-options">
+          <option value="https://kroki.io"></option>
+          <option value="https://www.plantuml.com/plantuml"></option>
+        </datalist>
+      </section>
+      <div class="settings-actions">
+        <button type="button" class="btn" id="settings-cancel-btn" data-i18n="cancel">Cancel</button>
+        <button type="submit" class="btn" id="settings-save-btn" data-i18n="save">Save</button>
+      </div>
+    </form>
+  </dialog>
 
   <script src="lib/markdown-it.min.js"></script>
   <script src="lib/highlight.min.js"></script>

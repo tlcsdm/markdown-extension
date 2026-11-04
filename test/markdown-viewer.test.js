@@ -3,6 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const test = require('node:test');
 const vm = require('node:vm');
+const zlib = require('node:zlib');
 
 const scriptPath = path.join(__dirname, '..', 'src', 'common', 'markdown-viewer.js');
 const source = fs.readFileSync(scriptPath, 'utf8');
@@ -36,7 +37,15 @@ function createFileTitle() {
   };
 }
 
-function loadViewerHooks({ prefersDark = false, savedTheme = 'auto', throwOnSetTheme = false } = {}) {
+function loadViewerHooks({
+  prefersDark = false,
+  savedTheme = 'auto',
+  throwOnSetTheme = false,
+  pako = {
+    deflate: (bytes) => bytes,
+    deflateRaw: (bytes) => bytes
+  }
+} = {}) {
   const attrs = {};
   const lightSheet = { disabled: false };
   const darkSheet = { disabled: true };
@@ -60,7 +69,8 @@ function loadViewerHooks({ prefersDark = false, savedTheme = 'auto', throwOnSetT
 
   const context = {
     window: {
-      matchMedia: () => ({ matches: prefersDark, addEventListener: () => {} })
+      matchMedia: () => ({ matches: prefersDark, addEventListener: () => {} }),
+      pako
     },
     document: {
       readyState: 'loading',
@@ -82,13 +92,15 @@ function loadViewerHooks({ prefersDark = false, savedTheme = 'auto', throwOnSetT
     history: { replaceState: () => {} },
     URLSearchParams,
     URL,
+    btoa: (value) => Buffer.from(value, 'binary').toString('base64'),
+    TextEncoder,
     alert: () => {},
     console
   };
 
   const instrumented = source.replace(
     "if (document.readyState === 'loading') {",
-    "window.__mdViewerTestHooks = { applyTheme, loadSavedTheme, slugify, escapeHtml, encodePlantuml, setFileMissingState }; if (document.readyState === 'loading') {"
+    "window.__mdViewerTestHooks = { applyTheme, loadSavedTheme, slugify, escapeHtml, encodePlantuml, setFileMissingState, normalizePlantumlServer, buildPlantumlImageUrl }; if (document.readyState === 'loading') {"
   );
 
   vm.runInNewContext(instrumented, context, { filename: scriptPath });
@@ -140,4 +152,31 @@ test('markdown-viewer setFileMissingState toggles missing title style', () => {
   assert.equal(env.fileTitle.missing, true);
   env.hooks.setFileMissingState(false);
   assert.equal(env.fileTitle.missing, false);
+});
+
+test('markdown-viewer uses Kroki-compatible encoding for default PlantUML server', () => {
+  const pako = {
+    deflate: (bytes) => zlib.deflateSync(Buffer.from(bytes)),
+    deflateRaw: (bytes) => zlib.deflateRawSync(Buffer.from(bytes))
+  };
+  const env = loadViewerHooks({ pako });
+  const diagram = '@startuml\nAlice -> Bob: hello\n@enduml';
+  const expectedPayload = zlib
+    .deflateSync(Buffer.from(diagram, 'utf8'))
+    .toString('base64')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/g, '');
+  const actualUrl = env.hooks.buildPlantumlImageUrl(diagram, 'https://kroki.io');
+
+  assert.equal(actualUrl, `https://kroki.io/plantuml/svg/${expectedPayload}`);
+});
+
+test('markdown-viewer supports custom PlantUML server endpoint', () => {
+  const env = loadViewerHooks();
+  const diagram = '@startuml\nBob -> Alice: hi\n@enduml';
+  const actualUrl = env.hooks.buildPlantumlImageUrl(diagram, 'https://www.plantuml.com/plantuml/');
+
+  assert.ok(actualUrl.startsWith('https://www.plantuml.com/plantuml/svg/'));
+  assert.equal(env.hooks.normalizePlantumlServer('  '), 'https://kroki.io');
 });

@@ -20,6 +20,15 @@
   "themeAuto": {
     "message": "自动"
   },
+  "settings": {
+    "message": "设置"
+  },
+  "save": {
+    "message": "保存"
+  },
+  "cancel": {
+    "message": "取消"
+  },
   "tableOfContents": {
     "message": "目录"
   },
@@ -40,6 +49,9 @@
   },
   "plantumlServerPlaceholder": {
     "message": "https://kroki.io"
+  },
+  "plantumlSettingsGroupLabel": {
+    "message": "PlantUML 渲染服务"
   },
   "openLinkedFile": {
     "message": "打开链接文件"
