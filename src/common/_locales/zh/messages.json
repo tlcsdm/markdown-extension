@@ -20,6 +20,15 @@
   "themeAuto": {
     "message": "自动"
   },
+  "settings": {
+    "message": "设置"
+  },
+  "save": {
+    "message": "保存"
+  },
+  "cancel": {
+    "message": "取消"
+  },
   "tableOfContents": {
     "message": "目录"
   },
@@ -41,6 +50,9 @@
   "plantumlServerPlaceholder": {
     "message": "https://kroki.io"
   },
+  "plantumlSettingsGroupLabel": {
+    "message": "PlantUML 渲染服务"
+  },
   "openLinkedFile": {
     "message": "打开链接文件"
   },
@@ -49,5 +61,17 @@
   },
   "noHeadings": {
     "message": "未找到标题"
+  },
+  "copyPlantumlSource": {
+    "message": "复制源码"
+  },
+  "copied": {
+    "message": "已复制"
+  },
+  "copyFailed": {
+    "message": "复制失败"
+  },
+  "copyUnavailable": {
+    "message": "当前环境不支持复制"
   }
 }

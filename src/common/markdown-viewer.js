@@ -10,6 +10,8 @@
   let fileWatchTimer = null;
   let themeMode = 'auto';
   let isSidebarCollapsed = false;
+  const plantumlServerStorageKey = 'mdViewer_plantumlServer';
+  const defaultPlantumlServer = 'https://kroki.io';
 
   // ===== DOM References =====
   const dropZone = document.getElementById('drop-zone');
@@ -24,6 +26,10 @@
   const sidebarToggleBtn = document.getElementById('sidebar-toggle-btn');
   const sidebarResizer = document.getElementById('sidebar-resizer');
   const tocScrollWrapper = document.getElementById('toc-scroll-wrapper');
+  const settingsBtn = document.getElementById('settings-btn');
+  const settingsDialog = document.getElementById('settings-dialog');
+  const settingsCancelBtn = document.getElementById('settings-cancel-btn');
+  const plantumlServerInput = document.getElementById('plantuml-server-input');
 
   // ===== PlantUML Encoder =====
   const pumlAlphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_';
@@ -54,6 +60,56 @@
       else result += append3bytes(compressed[i], 0, 0);
     }
     return result;
+  }
+
+  function normalizePlantumlServer(server) {
+    let normalized = String(server || '').trim().replace(/\/+$/, '');
+    if (!normalized) return defaultPlantumlServer;
+    if (!/^[a-z][a-z0-9+\-.]*:\/\//i.test(normalized)) {
+      normalized = `https://${normalized}`;
+    }
+    try {
+      const parsed = new URL(normalized);
+      if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
+        return defaultPlantumlServer;
+      }
+      return `${parsed.origin}${parsed.pathname}`.replace(/\/+$/, '');
+    } catch (e) {
+      return defaultPlantumlServer;
+    }
+  }
+
+  function getPlantumlServer() {
+    return normalizePlantumlServer(localStorage.getItem(plantumlServerStorageKey));
+  }
+
+  function encodeBase64Url(bytes) {
+    let binary = '';
+    for (let i = 0; i < bytes.length; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+  }
+
+  function encodeKroki(text) {
+    const bytes = new TextEncoder().encode(text);
+    const compressed = window.pako && typeof window.pako.deflate === 'function'
+      ? window.pako.deflate(bytes)
+      : bytes;
+    return encodeBase64Url(compressed);
+  }
+
+  function isPlantumlServer(server) {
+    const path = new URL(server).pathname.toLowerCase();
+    return path.endsWith('/plantuml') || path.includes('/plantuml/');
+  }
+
+  function buildPlantumlImageUrl(code, serverInput) {
+    const server = normalizePlantumlServer(serverInput);
+    if (isPlantumlServer(server)) {
+      return `${server}/svg/${encodePlantuml(code)}`;
+    }
+    return `${server}/plantuml/svg/${encodeKroki(code)}`;
   }
 
   // ===== Mermaid =====
@@ -201,28 +257,68 @@
     }
   }
 
+  function getI18nMessage(key, fallback) {
+    return window.i18n ? window.i18n.getMessage(key) : fallback;
+  }
+
+  async function copyPlantumlSource(code) {
+    if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+      await navigator.clipboard.writeText(code);
+      return true;
+    }
+    return false;
+  }
+
+  function createPlantumlActions(block, code) {
+    const actions = document.createElement('div');
+    actions.className = 'plantuml-actions';
+    const copyBtn = document.createElement('button');
+    copyBtn.type = 'button';
+    copyBtn.className = 'btn plantuml-copy-btn';
+    copyBtn.textContent = getI18nMessage('copyPlantumlSource', 'Copy source');
+    copyBtn.addEventListener('click', async () => {
+      const copyDefault = getI18nMessage('copyPlantumlSource', 'Copy source');
+      try {
+        const copied = await copyPlantumlSource(code);
+        copyBtn.textContent = copied
+          ? getI18nMessage('copied', 'Copied')
+          : getI18nMessage('copyUnavailable', 'Copy unavailable');
+      } catch (e) {
+        copyBtn.textContent = getI18nMessage('copyFailed', 'Copy failed');
+      }
+      setTimeout(() => { copyBtn.textContent = copyDefault; }, 1200);
+    });
+    actions.appendChild(copyBtn);
+    block.appendChild(actions);
+  }
+
   async function renderPlantumlBlocks() {
     const blocks = markdownBody.querySelectorAll('.plantuml-block[data-plantuml]');
     for (const block of blocks) {
       const code = block.getAttribute('data-plantuml');
       try {
-        const server = (localStorage.getItem('mdViewer_plantumlServer') || 'https://kroki.io').replace(/\/$/, '');
-        let imgUrl;
-        if (server.includes('kroki.io')) {
-          const encoded = btoa(String.fromCharCode(...new TextEncoder().encode(code)));
-          const urlSafe = encoded.replace(/\+/g, '-').replace(/\//g, '_');
-          imgUrl = `${server}/plantuml/svg/${urlSafe}`;
-        } else {
-          imgUrl = `${server}/svg/${encodePlantuml(code)}`;
-        }
         const img = document.createElement('img');
-        img.src = imgUrl;
+        img.src = buildPlantumlImageUrl(code, getPlantumlServer());
         img.alt = 'PlantUML diagram';
         img.style.maxWidth = '100%';
-        block.innerHTML = '';
+        block.textContent = '';
+        createPlantumlActions(block, code);
+        img.addEventListener('error', () => {
+          const errorElement = document.createElement('div');
+          errorElement.className = 'diagram-error';
+          errorElement.textContent = 'PlantUML render failed';
+          const actionNode = block.querySelector('.plantuml-actions');
+          block.textContent = '';
+          if (actionNode) block.appendChild(actionNode);
+          block.appendChild(errorElement);
+        }, { once: true });
         block.appendChild(img);
       } catch (e) {
-        block.innerHTML = `<div class="diagram-error">${escapeHtml(String(e.message || e))}</div>`;
+        const errorElement = document.createElement('div');
+        errorElement.className = 'diagram-error';
+        errorElement.textContent = String(e.message || e);
+        block.textContent = '';
+        block.appendChild(errorElement);
       }
     }
   }
@@ -518,6 +614,12 @@
     }
   }
 
+  function loadPlantumlSettings() {
+    if (plantumlServerInput) {
+      plantumlServerInput.value = getPlantumlServer();
+    }
+  }
+
   // ===== Events =====
   function setupEvents() {
     fileInput.addEventListener('change', async e => {
@@ -639,6 +741,28 @@
     document.addEventListener('mouseup', () => {
       isResizing = false;
     });
+
+    if (settingsBtn && settingsDialog) {
+      settingsBtn.addEventListener('click', () => {
+        loadPlantumlSettings();
+        settingsDialog.showModal();
+      });
+    }
+
+    if (settingsCancelBtn && settingsDialog) {
+      settingsCancelBtn.addEventListener('click', () => settingsDialog.close());
+    }
+
+    if (settingsDialog && plantumlServerInput) {
+      settingsDialog.addEventListener('close', () => {
+        if (settingsDialog.returnValue !== 'default') return;
+        const server = normalizePlantumlServer(plantumlServerInput.value);
+        try { localStorage.setItem(plantumlServerStorageKey, server); } catch (e) {}
+        if (currentFileText) {
+          renderPlantumlBlocks();
+        }
+      });
+    }
 
     window.addEventListener('beforeunload', stopFileWatch);
   }
